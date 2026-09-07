@@ -23,7 +23,7 @@ public class AnnouncementDAO implements AnnouncementDAO_interface {
 			e.printStackTrace();
 		}
 	}
-
+//	JDBC version
 	private static final String FIND_BY_ANNNO_STMT = "SELECT ann_no, ann_title, ann_begin, ann_img, ann_text FROM announcement WHERE ann_no = ?";
 	private static final String GET_ALL_STMT = "SELECT ann_no, ann_title, ann_begin, ann_img, ann_text FROM announcement";
 	private static final String INSERT_ANN = "INSERT INTO project.announcement(ann_title, ann_begin, ann_img, ann_text) VALUES (?, ?, ?, ?)";
