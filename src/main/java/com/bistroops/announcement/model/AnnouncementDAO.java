@@ -1,11 +1,5 @@
 package com.bistroops.announcement.model;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.util.ArrayList;
 import java.util.List;
 
 import javax.naming.Context;
@@ -30,9 +24,6 @@ public class AnnouncementDAO implements AnnouncementDAO_interface {
 		}
 	}
 //	Hibernate version
-	private static final String UPDATE_ANN = "UPDATE project.announcement SET ann_title = ?, ann_begin = ?, ann_img = ?, ann_text = ? WHERE ann_no = ?";
-	private static final String UPDATE_ANN_NO_IMG = "UPDATE project.announcement SET ann_title = ?, ann_begin = ?, ann_text = ? WHERE ann_no = ?";
-	private static final String DELETE_ANN = "DELETE FROM project.announcement WHERE ann_no = ?";
 
 	@Override
 	public AnnouncementVO findByAnnNo(Integer annNo) {
