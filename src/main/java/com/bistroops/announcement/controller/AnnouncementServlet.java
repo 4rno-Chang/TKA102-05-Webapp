@@ -176,19 +176,20 @@ public class AnnouncementServlet extends HttpServlet {
 		
 		return "/announcement/index.jsp";
 	}
-	
+
 	private void getImage(HttpServletRequest req, HttpServletResponse res) throws IOException{
 		Integer annNo = Integer.parseInt(req.getParameter("annNo"));
 		AnnouncementVO ann = annService.getAnnNoQuery(annNo);
 		byte[] img = ann.getAnnImg();
 		
 		if(img != null) {
-			res.setContentType("/image/jpg");
+			res.setContentType("image/jpg");
 			BufferedOutputStream bos = new BufferedOutputStream(res.getOutputStream());
 			
 			bos.write(img);
+			
 			bos.flush();
-		}
+		}        
 	}
 	@Override
 	protected void doGet(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
