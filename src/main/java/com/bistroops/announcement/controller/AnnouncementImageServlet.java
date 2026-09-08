@@ -12,7 +12,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import com.bistroops.announcement.model.AnnouncementService;
 import com.bistroops.announcement.model.AnnouncementVO;
 
-@WebServlet("/ann/ann.img")
+//@WebServlet("/ann/ann.img")
 public class AnnouncementImageServlet extends HttpServlet {
 
 	private AnnouncementService annService = new AnnouncementService();
