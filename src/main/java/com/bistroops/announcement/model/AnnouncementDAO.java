@@ -25,7 +25,7 @@ public class AnnouncementDAO implements AnnouncementDAO_interface {
 		} catch (NamingException e) {
 			e.printStackTrace();
 		}
-	} 
+	}
 //	JDBC version 
 	private static final String FIND_BY_ANNNO_STMT = "SELECT ann_no, ann_title, ann_begin, ann_img, ann_text FROM announcement WHERE ann_no = ?";
 	private static final String GET_ALL_STMT = "SELECT ann_no, ann_title, ann_begin, ann_img, ann_text FROM announcement";
