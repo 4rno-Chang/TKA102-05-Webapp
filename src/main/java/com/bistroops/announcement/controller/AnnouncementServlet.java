@@ -176,6 +176,7 @@ public class AnnouncementServlet extends HttpServlet {
 		
 		return "/announcement/index.jsp";
 	}
+
 	private void getImage(HttpServletRequest req, HttpServletResponse res) throws IOException{
 		Integer annNo = Integer.parseInt(req.getParameter("annNo"));
 		AnnouncementVO ann = annService.getAnnNoQuery(annNo);
