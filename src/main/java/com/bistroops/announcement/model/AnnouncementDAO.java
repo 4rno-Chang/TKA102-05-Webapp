@@ -1,5 +1,6 @@
 package com.bistroops.announcement.model;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import javax.naming.Context;
@@ -82,13 +83,17 @@ public class AnnouncementDAO implements AnnouncementDAO_interface {
 		Transaction transaction = null;
 		try {
 			transaction = session.beginTransaction();
-			Integer updateNo = annVO.getAnnNo();
-			AnnouncementVO ann = session.find(AnnouncementVO.class, updateNo);
 			
-			ann.setAnnTitle(annVO.getAnnTitle());
-			ann.setAnnBegin(annVO.getAnnBegin());
-			ann.setAnnText(annVO.getAnnText());
-			ann.setAnnImg(annVO.getAnnImg());
+//			先找VO.no -> find找到這個VO -> 一個一個set annVO(Update傳過來的資料) ->commit
+//			Integer updateNo = annVO.getAnnNo();
+//			AnnouncementVO ann = session.find(AnnouncementVO.class, updateNo);
+//			ann.setAnnTitle(annVO.getAnnTitle());
+//			ann.setAnnBegin(annVO.getAnnBegin());
+//			ann.setAnnText(annVO.getAnnText());
+//			ann.setAnnImg(annVO.getAnnImg());
+			
+//			直接用session.merge(Update傳過來的資料)
+			session.merge(annVO);
 			
 			transaction.commit();
 
