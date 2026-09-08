@@ -14,15 +14,6 @@ import org.hibernate.Transaction;
 import com.bistroops.util.HibernateUtil;
 
 public class AnnouncementDAO implements AnnouncementDAO_interface {
-	private static DataSource ds = null;
-	static {
-		try {
-			Context ctx = new InitialContext();
-			ds = (DataSource) ctx.lookup("java:comp/env/jdbc/TestDB2");
-		} catch (NamingException e) {
-			e.printStackTrace();
-		}
-	}
 //	Hibernate version
 
 	@Override
