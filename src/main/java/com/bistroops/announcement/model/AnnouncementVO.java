@@ -1,6 +1,6 @@
 package com.bistroops.announcement.model;
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -40,6 +40,12 @@ ann_text MEDIUMTEXT COMMENT '文字內容',
 	@Column(name = "ann_text", columnDefinition = "mediumtext")
 	private String annText;
 
+	public String getAnnDateTimeFormat() {
+		if(annBegin != null) 
+			return annBegin.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
+		return null;
+	}
+	
 	public Integer getAnnNo() {
 		return annNo;
 	}
