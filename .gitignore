@@ -12,6 +12,7 @@
 *.ear
 target/
 build/
+.metadata/
 
 ##############################
 # Maven
