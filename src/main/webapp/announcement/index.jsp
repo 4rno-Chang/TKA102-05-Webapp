@@ -9,6 +9,9 @@
 </head>
 <body>
 	<h1>公告設定</h1>
+	<c:if test="${not empty errorMsg}">
+		<p style="color: red;">${errorMsg}</p>
+	</c:if>
 	<c:if test="${not empty errorMsgNoQuery}">
 		<p style="color: red;">${errorMsgNoQuery}</p>
 	</c:if>
@@ -23,6 +26,9 @@
 	</c:if>
 	<c:if test="${not empty errorMsgInsertText}">
 		<p style="color: red;">${errorMsgInsertText}</p>
+	</c:if>
+	<c:if test="${not empty errorMsgUpdateBegin}">
+		<p style="color: red;">${errorMsgUpdateBegin}</p>
 	</c:if>
 
 	<a href="${pageContext.request.contextPath}/ann/ann.do?action=getAll">查看所有公告</a>
