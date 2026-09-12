@@ -23,7 +23,7 @@ public class AnnouncementService {
 		return dao.findByAnnNo(annNo);
 	}
 
-	public void insertAnn(String annTitle, LocalDateTime annBegin, byte[] annImg, String annText) {
+	public Integer insertAnn(String annTitle, LocalDateTime annBegin, byte[] annImg, String annText) {
 		AnnouncementVO ann = new AnnouncementVO();
 
 		ann.setAnnTitle(annTitle);
@@ -32,6 +32,8 @@ public class AnnouncementService {
 		ann.setAnnText(annText);
 		
 		dao.insert(ann);
+		
+		return ann.getAnnNo();
 	}
 	
 	public void updateAnn(Integer annNo, String annTitle, LocalDateTime annBegin, byte[] annImg, String annText) {
