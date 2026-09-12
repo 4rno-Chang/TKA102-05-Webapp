@@ -197,7 +197,7 @@ public class AnnouncementServlet extends HttpServlet {
 		String annTextStr = req.getParameter("annText");
 
 		if (annTitleStr == null || annTitleStr.trim().isEmpty()) {
-			req.setAttribute("errorMsg", "請輸入公告標題");
+			req.setAttribute("errorMsg", "請輸入公告標題"); 
 			return "/announcement/index.jsp";
 		}
 
