@@ -17,7 +17,7 @@ import com.bistroops.util.HibernateUtil;
 
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.CriteriaBuilder;
-
+ 
 public class AnnouncementDAO implements AnnouncementDAO_interface {
 //	Hibernate version
 
