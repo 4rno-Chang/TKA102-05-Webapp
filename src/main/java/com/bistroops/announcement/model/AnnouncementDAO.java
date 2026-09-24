@@ -176,6 +176,6 @@ public class AnnouncementDAO implements AnnouncementDAO_interface {
 			throw new RuntimeException("Database error. " + e.getMessage());
 		} finally {
 			session.close();
-		}
+		} 
 	}
 }
