@@ -29,7 +29,7 @@
 
 			<c:if test="${not empty ann.annImg}">
 				<img
-					src="${pageContext.request.contextPath}/ann/annImage.do?annNo=${ann.annNo}"
+					src="${pageContext.request.contextPath}/ann/ann.img?annNo=${ann.annNo}"
 					alt="${ann.annTitle}" width="200">
 			</c:if>
 		</div>

@@ -7,6 +7,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 
 @Entity
@@ -31,9 +32,11 @@ ann_text MEDIUMTEXT COMMENT '文字內容',
 	@Column(name = "ann_begin")
 	private LocalDateTime annBegin;
 	
+	@Lob
 	@Column(name = "ann_img", columnDefinition = "mediumblob")
 	private byte[] annImg;
 	
+	@Lob
 	@Column(name = "ann_text", columnDefinition = "mediumtext")
 	private String annText;
 
