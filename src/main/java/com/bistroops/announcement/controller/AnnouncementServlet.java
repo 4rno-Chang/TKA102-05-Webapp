@@ -1,15 +1,24 @@
 package com.bistroops.announcement.controller;
 
-import java.io.*;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.net.URLConnection;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.List;
 
-import jakarta.servlet.*;
+import com.bistroops.announcement.model.AnnouncementService;
+import com.bistroops.announcement.model.AnnouncementVO;
+
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.*;
-
-import com.bistroops.announcement.model.*;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.Part;
 
 @WebServlet({"/ann/ann.do", "/ann/ann.img"})
 @MultipartConfig
@@ -26,6 +35,12 @@ public class AnnouncementServlet extends HttpServlet {
 		req.setCharacterEncoding("UTF-8");
 		String action = req.getParameter("action");
 		String forwardPath = "";
+		
+		if("/ann/ann.img".equals(req.getServletPath())) {
+			getImage(req, res);
+			return;
+		}
+		
 		switch (action) {
 		case "getAll":
 			forwardPath = getAll(req, res);
@@ -68,7 +83,7 @@ public class AnnouncementServlet extends HttpServlet {
 		// 防呆
 		String annNoStr = req.getParameter("annNo");
 		if (annNoStr == null || annNoStr.trim().isEmpty()) {
-			req.setAttribute("errorMsg", "請輸入公告編號");
+			req.setAttribute("errorMsgNoQuery", "請輸入公告編號");
 			return "/announcement/index.jsp";
 		}
 
@@ -77,14 +92,14 @@ public class AnnouncementServlet extends HttpServlet {
 			AnnouncementVO ann = annService.getAnnNoQuery(annNo);
 
 			if (ann == null) {
-				req.setAttribute("errorMsg", "查無此公告編號：" + annNo);
+				req.setAttribute("errorMsgNoQuery", "查無此公告編號：" + annNo);
 				return "/announcement/index.jsp";
 			}
 			req.setAttribute("ann", ann);
 			return "/announcement/listOneAnn.jsp";
 
 		} catch (NumberFormatException e) {
-			req.setAttribute("errorMsg", "公告編號格式錯誤");
+			req.setAttribute("errorMsgNoQuery", "公告編號格式錯誤");
 			return "/announcement/index.jsp";
 		}
 	}
@@ -95,13 +110,27 @@ public class AnnouncementServlet extends HttpServlet {
 		String annTextStr = req.getParameter("annText");
 
 		if (annTitleStr == null || annTitleStr.trim().isEmpty()) {
-			req.setAttribute("errorMsg", "請輸入公告標題");
+			req.setAttribute("errorMsgInsertTitle", "請輸入公告標題");
+			return "/announcement/index.jsp";
+		}
+		if (annBeginStr == null || annBeginStr.trim().isEmpty()) {
+			req.setAttribute("errorMsgInsertBeginNotInput", "請輸入公告時間");
+			return "/announcement/index.jsp";
+		}
+		if (annTextStr == null || annTextStr.trim().isEmpty()) {
+			req.setAttribute("errorMsgInsertText", "請輸入公告內文");
 			return "/announcement/index.jsp";
 		}
 
 		try {
 			String annTitle = annTitleStr.trim();
 			LocalDateTime annBegin = LocalDateTime.parse(annBeginStr);
+			
+			if (annBegin.isBefore(LocalDateTime.now())) {
+		        req.setAttribute("errorMsgInsertBegin", "公告開始時間不能選擇過去的時間");
+		        return "/announcement/index.jsp";
+		    }
+			
 			String annText = annTextStr;
 			Part annImgPart = req.getPart("annImg");
 			byte[] annImg = null;
@@ -117,7 +146,7 @@ public class AnnouncementServlet extends HttpServlet {
 
 		} catch (Exception e) {
 			e.printStackTrace();
-			req.setAttribute("errorMsg", "新增公告失敗");
+			req.setAttribute("errorMsgInsert", "新增公告失敗");
 			return "/announcement/index.jsp";
 		}
 
@@ -176,14 +205,18 @@ public class AnnouncementServlet extends HttpServlet {
 		
 		return "/announcement/index.jsp";
 	}
-
 	private void getImage(HttpServletRequest req, HttpServletResponse res) throws IOException{
 		Integer annNo = Integer.parseInt(req.getParameter("annNo"));
 		AnnouncementVO ann = annService.getAnnNoQuery(annNo);
 		byte[] img = ann.getAnnImg();
 		
 		if(img != null) {
-			res.setContentType("image/jpg");
+//			res.setContentType("image/jpg");
+			String mimeType = URLConnection.guessContentTypeFromStream(new ByteArrayInputStream(img));
+	        if (mimeType == null) {
+	            mimeType = "application/octet-stream"; // 無法辨識時的保底值
+	        }
+	        res.setContentType(mimeType);
 			BufferedOutputStream bos = new BufferedOutputStream(res.getOutputStream());
 			
 			bos.write(img);
@@ -193,10 +226,7 @@ public class AnnouncementServlet extends HttpServlet {
 	}
 	@Override
 	protected void doGet(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
-		if("/ann/ann.img".equals(req.getServletPath())) {
-			getImage(req, res);
-			return;
-		}
+		
 		doPost(req, res);
 	}
 
