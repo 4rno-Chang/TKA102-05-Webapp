@@ -77,3 +77,4 @@ Thumbs.db
 /jacoco.exec
 
 src/main/resources/hibernate.cfg.xml
+application.properties
