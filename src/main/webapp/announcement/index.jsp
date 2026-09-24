@@ -19,7 +19,7 @@
 	<form action="${pageContext.request.contextPath}/ann/ann.do"
 		method="post">
 		<p>
-			<label>公告編號查詢：</label>
+			<label>公告編號查詢：</label> 
 		</p>
 		<input type="text" name="annNo"> <input type="hidden"
 			name="action" value="annNoQuery">
