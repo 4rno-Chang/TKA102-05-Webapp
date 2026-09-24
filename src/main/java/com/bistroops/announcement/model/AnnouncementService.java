@@ -1,12 +1,11 @@
 package com.bistroops.announcement.model;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import com.bistroops.announcement.model.AnnouncementVO;
 
+import org.springframework.stereotype.Service;
+
+@Service
 public class AnnouncementService {
 
 	private AnnouncementDAO_interface dao;
