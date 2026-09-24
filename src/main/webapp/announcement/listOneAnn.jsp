@@ -25,7 +25,7 @@
 			<tr>
 				<td>${ann.annNo}</td>
 				<td>${ann.annTitle}</td>
-				<td>${ann.annBegin}</td>
+				<td>${ann.annDateTimeFormat}</td>
 				<td><c:if test="${not empty ann.annImg}">
 						<img
 							src="${pageContext.request.contextPath}/ann/ann.img?annNo=${ann.annNo}"
