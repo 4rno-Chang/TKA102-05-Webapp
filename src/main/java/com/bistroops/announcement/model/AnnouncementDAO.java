@@ -1,17 +1,22 @@
 package com.bistroops.announcement.model;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.util.ArrayList;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.sql.DataSource;
+
+import org.hibernate.Hibernate;
+import org.hibernate.HibernateException;
+import org.hibernate.Session;
+import org.hibernate.Transaction;
+
+import com.bistroops.util.HibernateUtil;
+
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.CriteriaBuilder;
 
 public class AnnouncementDAO implements AnnouncementDAO_interface {
 	private static DataSource ds = null;
@@ -40,22 +45,19 @@ public class AnnouncementDAO implements AnnouncementDAO_interface {
 		AnnouncementVO annVO = null;
 
 		try {
-			con = ds.getConnection();
-			pstmt = con.prepareStatement(FIND_BY_ANNNO_STMT);
-			pstmt.setInt(1, annNo);
-			rs = pstmt.executeQuery();
-
-			if (rs.next()) {
-				annVO = new AnnouncementVO();
-				annVO.setAnnNo(rs.getInt("ann_no"));
-				annVO.setAnnTitle(rs.getString("ann_title"));
-				annVO.setAnnBegin(rs.getTimestamp("ann_begin").toLocalDateTime());
-				annVO.setAnnImg(rs.getBytes("ann_img"));
-				annVO.setAnnText(rs.getString("ann_text"));
-			}
-
-		} catch (SQLException se) {
-			throw new RuntimeException("A database error occured. " + se.getMessage());
+//			============      hql      ============
+//			String FindByAnn = "FROM AnnouncementVO WHERE annNo = :annNo";			
+//			return session.createQuery(FindByAnn, AnnouncementVO.class).setParameter("annNo", annNo).uniqueResult();
+			
+//			============Hibernate method============
+			return session.find(AnnouncementVO.class, annNo);
+			
+		} catch (HibernateException he) {
+			he.printStackTrace();
+			throw new RuntimeException("something error occured. " + he.getMessage());
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new RuntimeException("Database error. " + e.getMessage());
 		} finally {
 			if (rs != null) {
 				try {
@@ -92,22 +94,23 @@ public class AnnouncementDAO implements AnnouncementDAO_interface {
 		AnnouncementVO annVO = null;
 
 		try {
-			con = ds.getConnection();
-			pstmt = con.prepareStatement(GET_ALL_STMT);
-			rs = pstmt.executeQuery();
+//			============      hql      ============
+//			String findAll = "FROM AnnouncementVO";
+//			return session.createQuery(findAll, AnnouncementVO.class).getResultList();
+			
+//			============Hibernate criteria============
+			CriteriaBuilder cb = session.getCriteriaBuilder();
+			CriteriaQuery<AnnouncementVO> cq = cb.createQuery(AnnouncementVO.class);
 
-			while (rs.next()) {
-				annVO = new AnnouncementVO();
-				annVO.setAnnNo(rs.getInt("ann_no"));
-				annVO.setAnnTitle(rs.getString("ann_title"));
-				annVO.setAnnBegin(rs.getTimestamp("ann_begin").toLocalDateTime());
-				annVO.setAnnImg(rs.getBytes("ann_img"));
-				annVO.setAnnText(rs.getString("ann_text"));
-				list.add(annVO);
-			}
-
-		} catch (SQLException se) {
-			throw new RuntimeException("Database error. " + se.getMessage());
+			cq.from(AnnouncementVO.class);
+			return session.createQuery(cq).getResultList();
+			
+		} catch (HibernateException he) {
+			he.printStackTrace();
+			throw new RuntimeException("something error occured. " + he.getMessage());
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new RuntimeException("Database error. " + e.getMessage());
 		} finally {
 			if (rs != null) {
 				try {
@@ -163,21 +166,27 @@ public class AnnouncementDAO implements AnnouncementDAO_interface {
 		PreparedStatement pstmt = null;
 
 		try {
-			con = ds.getConnection();
-			pstmt = con.prepareStatement(UPDATE_ANN);
+			transaction = session.beginTransaction();
+			
+//			先找annVO.no -> find找到這個VO -> 一個一個set(Update page傳過來的資料) ->commit
+//			Integer updateNo = annVO.getAnnNo();
+//			AnnouncementVO ann = session.find(AnnouncementVO.class, updateNo);
+//			ann.setAnnTitle(annVO.getAnnTitle());
+//			ann.setAnnBegin(annVO.getAnnBegin());
+//			ann.setAnnText(annVO.getAnnText());
+//			ann.setAnnImg(annVO.getAnnImg());
+			
+//			直接用session.merge(Update page傳過來的資料)
+			session.merge(annVO);
+			
+			transaction.commit();
 
-			pstmt.setString(1, annVO.getAnnTitle());
-			pstmt.setTimestamp(2, Timestamp.valueOf(annVO.getAnnBegin()));
-			pstmt.setBytes(3, annVO.getAnnImg());
-			pstmt.setString(4, annVO.getAnnText());
-
-			pstmt.setInt(5, annVO.getAnnNo());
-
-			pstmt.executeUpdate();
-
-		} catch (SQLException se) {
-			se.printStackTrace();
-		} catch (Exception e) {
+		} catch(HibernateException he) {
+			if(transaction != null)
+				transaction.rollback();
+			he.printStackTrace();
+			throw new RuntimeException("something error occured. " + he.getMessage());
+		} catch(Exception e) {
 			e.printStackTrace();
 		}
 	}
