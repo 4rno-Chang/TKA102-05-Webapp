@@ -11,6 +11,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -18,23 +19,24 @@ import com.bistroops.announcement.model.AnnouncementService;
 import com.bistroops.announcement.model.AnnouncementVO;
 
 @Controller
+@RequestMapping("/announcement")
 public class AnnouncementController {
 
 	@Autowired
 	private AnnouncementService annService;
-
-	@GetMapping("/announcement")
+	
+	@GetMapping("")
 	public String index() {
 		return "announcement/index";
 	}
-
-	@GetMapping("/announcement/list")
+    
+    @GetMapping("/list")
 	public String list(Model model) {
 		model.addAttribute("annList", annService.getAll());
 		return "announcement/listAllAnns";
 	} 
-
-	@GetMapping("/announcement/search")
+    
+	@GetMapping("/search")
 	public String search(@RequestParam(name = "annNo", required = false) String annNoStr, Model model) {
 		if (annNoStr == null || annNoStr.trim().isEmpty()) {
 			model.addAttribute("errorMsg", "請輸入公告編號");
@@ -58,12 +60,12 @@ public class AnnouncementController {
 		}
 	}
 
-	@GetMapping("/announcement/insert")
+	@GetMapping("/insert")
 	public String insertPage() {
 		return "announcement/insertAnnPage";
 	}
 
-	@PostMapping("/announcement/insert")
+	@PostMapping("/insert")
 	public String insert(@RequestParam String annTitle, @RequestParam String annBegin,
 			@RequestParam(required = false) MultipartFile annImg, @RequestParam String annText, Model model) {
 
@@ -87,14 +89,14 @@ public class AnnouncementController {
 		return "redirect:/announcement";
 	}
 
-	@GetMapping("/announcement/update/{annNo}")
+	@GetMapping("/update/{annNo}")
 	public String updatePage(@PathVariable Integer annNo, Model model) {
 		AnnouncementVO ann = annService.getAnnNoQuery(annNo);
 		model.addAttribute("ann", ann);
 		return "announcement/updateAnnPage";
 	}
 
-	@PostMapping("/announcement/update")
+	@PostMapping("/update")
 	public String update(@RequestParam Integer annNo, @RequestParam String annTitle, @RequestParam String annBegin,
 			@RequestParam(required = false) MultipartFile annImg, @RequestParam String annText, Model model) {
 
@@ -118,13 +120,13 @@ public class AnnouncementController {
 		return "redirect:/announcement";
 	}
 
-	@PostMapping("/announcement/delete/{annNo}")
+	@PostMapping("/delete/{annNo}")
 	public String delete(@PathVariable Integer annNo) {
 		annService.deleteAnn(annNo);
 		return "redirect:/announcement";
 	}
 
-	@GetMapping("/announcement/image/{annNo}")
+	@GetMapping("/image/{annNo}")
 	public ResponseEntity<byte[]> image(@PathVariable Integer annNo) {
 		AnnouncementVO ann = annService.getAnnNoQuery(annNo);
 		byte[] img = (ann != null) ? ann.getAnnImg() : null;
