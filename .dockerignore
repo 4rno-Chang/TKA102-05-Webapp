@@ -1,0 +1,13 @@
+.git
+.gitignore
+.DS_Store
+*.log
+mysql_data/
+redis_data/
+target/
+.mvn/
+.settings/
+.project
+.classpath
+pom-*.xml
+.env
