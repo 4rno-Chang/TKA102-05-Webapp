@@ -6,7 +6,7 @@
 </head>
 <body>
 	<h1>修改公告</h1>
-	<form th:action="@{/announcement/update}" method="post" enctype="multipart/form-data">
+	<form th:action="@{/admin/announcement/update}" method="post" enctype="multipart/form-data">
 		<input type="hidden" name="annNo" th:value="${ann.annNo}">
 
 		<div>
@@ -22,7 +22,7 @@
 
 		<div>
 			<label>目前公告圖片：</label>
-			<img th:if="${ann.annImg != null}" th:src="@{/announcement/image/{no}(no=${ann.annNo})}"
+			<img th:if="${ann.annImg != null}" th:src="@{/admin/announcement/image/{no}(no=${ann.annNo})}"
 				th:alt="${ann.annTitle}" width="200">
 		</div>
 		<br>
@@ -41,6 +41,6 @@
 	<br>
 	<br>
 
-	<a th:href="@{/announcement}">回首頁</a>
+	<a th:href="@{/admin/announcement}">回首頁</a>
 </body>
 </html>
