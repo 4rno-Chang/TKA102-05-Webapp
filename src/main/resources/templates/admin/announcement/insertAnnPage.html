@@ -6,7 +6,7 @@
 </head>
 <body>
 	<h1>新增公告</h1>
-	<form th:action="@{/announcement/insert}" method="post" enctype="multipart/form-data">
+	<form th:action="@{/admin/announcement/insert}" method="post" enctype="multipart/form-data">
 
 		<div>
 			<label for="annTitle">公告標題：</label>
@@ -38,6 +38,6 @@
 	<br>
 	<br>
 
-	<a th:href="@{/announcement}">回首頁</a>
+	<a th:href="@{/admin/announcement}">回首頁</a>
 </body>
 </html>

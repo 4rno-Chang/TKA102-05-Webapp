@@ -1,4 +1,4 @@
-package com.bistroops.announcement;
+package com.bistroops;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,7 +17,7 @@ import java.util.*;
 
 //@PropertySource("classpath:application.properties") // 於https://start.spring.io建立Spring Boot專案時, application.properties文件預設已經放在我們的src/main/resources 目錄中，它會被自動檢測到
 @Controller
-public class IndexController_inSpringBoot {
+public class FrontIndexController {
 	
 	// @Autowired (●自動裝配)(Spring ORM 課程)
 	@Autowired
@@ -30,7 +30,7 @@ public class IndexController_inSpringBoot {
     @GetMapping("/")
     public String index(Model model) {
     	model.addAttribute("message", message);
-        return "home"; //view
+        return "front/index"; //view
     }
     
 }

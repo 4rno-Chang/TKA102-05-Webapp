@@ -19,17 +19,17 @@
 			<td th:text="${ann.annTitle}"></td>
 			<td th:text="${#temporals.format(ann.annBegin, 'yyyy-MM-dd HH:mm')}"></td>
 			<td>
-				<img th:if="${ann.annImg != null}" th:src="@{/announcement/image/{no}(no=${ann.annNo})}"
+				<img th:if="${ann.annImg != null}" th:src="@{/admin/announcement/image/{no}(no=${ann.annNo})}"
 					th:alt="${ann.annTitle}">
 			</td>
 			<td th:text="${ann.annText}"></td>
 			<td>
-				<form th:action="@{/announcement/update/{no}(no=${ann.annNo})}" method="get">
+				<form th:action="@{/admin/announcement/update/{no}(no=${ann.annNo})}" method="get">
 					<button type="submit">修改公告</button>
 				</form>
 			</td>
 			<td>
-				<form th:action="@{/announcement/delete/{no}(no=${ann.annNo})}" method="post">
+				<form th:action="@{/admin/announcement/delete/{no}(no=${ann.annNo})}" method="post">
 					<button type="submit">刪除公告</button>
 				</form>
 			</td>
@@ -40,6 +40,6 @@
 	<br>
 	<br>
 
-	<a th:href="@{/announcement}">回首頁</a>
+	<a th:href="@{/admin/announcement}">回首頁</a>
 </body>
 </html>
