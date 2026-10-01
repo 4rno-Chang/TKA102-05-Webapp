@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<title th:text="${ann.annTitle}">公告內容</title>
+</head>
+<body>
+	<h1 th:text="${ann.annTitle}"></h1>
+	<p th:text="${#temporals.format(ann.annBegin, 'yyyy-MM-dd HH:mm')}"></p>
+
+	<img th:if="${ann.annImg != null}" th:src="@{/announcement/image/{no}(no=${ann.annNo})}"
+		th:alt="${ann.annTitle}" width="400">
+
+	<p th:text="${ann.annText}" style="white-space: pre-line;"></p>
+
+	<br>
+	<br>
+	<br>
+
+	<a th:href="@{/announcement}">回公告列表</a>
+</body>
+</html>
