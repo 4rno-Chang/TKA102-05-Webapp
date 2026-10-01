@@ -8,10 +8,10 @@
 	<h1>公告設定</h1>
 	<p th:if="${errorMsg != null}" style="color: red;" th:text="${errorMsg}"></p>
 
-	<a th:href="@{/announcement/list}">查看所有公告</a>
+	<a th:href="@{/admin/announcement/list}">查看所有公告</a>
 	<br>
 	<br>
-	<form th:action="@{/announcement/search}" method="get">
+	<form th:action="@{/admin/announcement/search}" method="get">
 		<p>
 			<label>公告編號查詢：</label>
 		</p>
@@ -20,7 +20,7 @@
 			<input type="submit" value="查詢">
 		</p>
 	</form>
-	<a th:href="@{/announcement/insert}">新增公告</a>
+	<a th:href="@{/admin/announcement/insert}">新增公告</a>
 	<br>
 	<br>
 

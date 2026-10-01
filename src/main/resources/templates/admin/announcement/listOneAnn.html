@@ -21,7 +21,7 @@
 			<td th:text="${ann.annTitle}"></td>
 			<td th:text="${#temporals.format(ann.annBegin, 'yyyy-MM-dd HH:mm')}"></td>
 			<td>
-				<img th:if="${ann.annImg != null}" th:src="@{/announcement/image/{no}(no=${ann.annNo})}"
+				<img th:if="${ann.annImg != null}" th:src="@{/admin/announcement/image/{no}(no=${ann.annNo})}"
 					th:alt="${ann.annTitle}">
 			</td>
 			<td th:text="${ann.annText}"></td>
@@ -32,6 +32,6 @@
 	<br>
 	<br>
 
-	<a th:href="@{/announcement}">回首頁</a>
+	<a th:href="@{/admin/announcement}">回首頁</a>
 </body>
 </html>
