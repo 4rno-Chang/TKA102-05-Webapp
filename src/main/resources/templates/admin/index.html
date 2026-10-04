@@ -6,16 +6,23 @@
   </head>
   <body>
     <h1>後台首頁</h1>
-    <p>
+    <p th:if="${loginEmp != null}">
       歡迎，<span th:text="${loginEmp.empName}"></span>（員工編號
       <span th:text="${loginEmp.empNo}"></span>）
     </p>
-    <form th:action="@{/admin/logout}" method="post">
+    <p th:if="${loginEmp == null}">（開發模式：未登入）</p>
+    <form
+      th:if="${loginEmp != null}"
+      th:action="@{/admin/logout}"
+      method="post"
+    >
       <button type="submit">登出</button>
     </form>
 
     <!-- <a th:href="@{/admin/announcement}">公告管理</a> -->
-    <a th:if="${loginEmp.hasPerm(5)}" th:href="@{/admin/announcement}"
+    <a
+      th:if="${loginEmp == null or loginEmp.hasPerm(5)}"
+      th:href="@{/admin/announcement}"
       >公告管理</a
     >
 
