@@ -67,4 +67,10 @@ public class AdminUserDetails implements UserDetails {
 	public boolean isCredentialsNonExpired() {
 		return true;
 	}
+
+	// 是否擁有某個權限，例如 hasPerm(5) → 是否有 PERM_5（公告設定）
+	public boolean hasPerm(int permNo) {
+		return authorities.stream().anyMatch(a -> a.getAuthority().equals("PERM_" + permNo));
+	}
+
 }

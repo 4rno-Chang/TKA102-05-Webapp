@@ -14,7 +14,11 @@
       <button type="submit">登出</button>
     </form>
 
-    <a th:href="@{/admin/announcement}">公告管理</a>
+    <!-- <a th:href="@{/admin/announcement}">公告管理</a> -->
+    <a th:if="${loginEmp.hasPerm(5)}" th:href="@{/admin/announcement}"
+      >公告管理</a
+    >
+
     <br />
     <br />
   </body>

@@ -10,13 +10,10 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 public class DefaultSecurityConfig {
 
-    @Bean
-    @Order(99) // 沒有 securityMatcher = 匹配所有請求，所以一定要排最後
-    public SecurityFilterChain defaultFilterChain(HttpSecurity http) throws Exception {
-        http
-            .authorizeHttpRequests(auth -> auth
-                .anyRequest().permitAll()
-            );
-        return http.build();
-    }
+	@Bean
+	@Order(99) // 沒有 securityMatcher = 匹配所有請求，所以一定要排最後
+	public SecurityFilterChain defaultFilterChain(HttpSecurity http) throws Exception {
+		http.authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+		return http.build();
+	}
 }
