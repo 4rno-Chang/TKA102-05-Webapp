@@ -1,0 +1,65 @@
+/* =========================================================
+   Bistroops 員工後台：權限不足（403）頁樣式
+   需要先載入 staff.css（使用它的 --st-* 變數、.staff-card、.staff-btn）
+   ========================================================= */
+
+
+/* ========== 1. 卡片 ========== */
+.denied-card {
+  max-width: 520px;
+  margin: 8vh auto 0;
+  padding: 44px 32px 36px;
+  border-top: 6px solid var(--st-yellow);
+  text-align: center;
+}
+
+
+/* ========== 2. 圖示與文字 ========== */
+.denied-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 76px; height: 76px;
+  margin-bottom: 14px;
+  background: #f8e7c4;          /* 同 staff.css 的 .tag-yellow */
+  border-radius: 50%;
+}
+.denied-icon svg {
+  width: 38px; height: 38px;
+  fill: none;
+  stroke: #8a5e10;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.denied-code {
+  color: var(--st-muted);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 4px;
+}
+.denied-title {
+  margin: 2px 0 10px;
+  font-family: var(--st-serif);
+  font-size: 28px;
+  font-weight: 700;
+}
+.denied-desc { color: var(--st-muted); }
+
+
+/* ========== 3. 按鈕 ========== */
+.denied-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+
+/* ========== 4. 手機 ========== */
+@media (max-width: 640px) {
+  .denied-card { margin-top: 24px; padding: 36px 20px 28px; }
+  .denied-actions { flex-direction: column; }
+  .denied-actions form,
+  .denied-actions .staff-btn { width: 100%; }
+}

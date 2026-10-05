@@ -24,7 +24,7 @@ public class FrontAnnouncementController {
 	@GetMapping("")
 	public String list(Model model) {
 		model.addAttribute("annList", annService.getPublished());
-		return "front/announcement/list";
+		return "front/announcement/listAll";
 	}
 
 	@GetMapping("/{annNo}")

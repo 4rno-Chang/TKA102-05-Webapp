@@ -265,18 +265,18 @@
         
         <!-- ●●●Spring Security-->  
         <!-- ●●●沒用到時請勿下載-->
-<!--        <dependency>-->
-<!--            <groupId>org.springframework.boot</groupId>-->
-<!--            <artifactId>spring-boot-starter-security</artifactId>-->
-<!--        </dependency>-->
+       <dependency>
+           <groupId>org.springframework.boot</groupId>
+           <artifactId>spring-boot-starter-security</artifactId>
+       </dependency>
         
         <!-- ●●●thymeleaf Spring Security--> 
-        <!-- ●●●與前面配合使用，沒用到時不用下載-->
+        <!-- ●●●與前面配合使用，沒用到時不用下載 -->
         <!-- ●●●如果是舊版 Spring Boot 2.x，請使用 springsecurity5 -->
-<!--        <dependency>-->
-<!--            <groupId>org.thymeleaf.extras</groupId>-->
-<!--            <artifactId>thymeleaf-extras-springsecurity6</artifactId>-->
-<!--        </dependency>-->
+       <!-- <dependency>
+           <groupId>org.thymeleaf.extras</groupId>
+           <artifactId>thymeleaf-extras-springsecurity6</artifactId>
+       </dependency> -->
 
 	</dependencies>
 
