@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title th:text="|Bistroops｜${ann.annTitle}|">Bistroops｜最新消息</title>
+  <title>Bistroops｜最新消息</title>
   <link rel="icon" th:href="@{/common/images/logo-mark.svg}" type="image/svg+xml">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -60,29 +60,42 @@
     </div>
   </header>
 
-  <!-- ========== 公告內文 ==========
-       ann：FrontAnnouncementController 放入；查無資料或尚未開始時 Controller 會導回列表 -->
+  <!-- ========== 公告列表 ==========
+       annList：FrontAnnouncementController 放入，只有「已開始」的公告，新的在前 -->
   <main class="ann-page section">
-    <article class="container ann-article">
-      <a class="ann-back" th:href="@{/announcement}">‹ 返回最新消息</a>
+    <div class="container">
+      <p class="eyebrow">News</p>
+      <h1 class="section-title">最新消息</h1>
 
-      <header class="ann-article-head">
-        <time class="ann-date" th:datetime="${ann.annBegin}"
-          th:text="${#temporals.format(ann.annBegin, 'yyyy.MM.dd')}">2026.01.01</time>
-        <h1 class="ann-article-title" th:text="${ann.annTitle}">公告標題</h1>
-      </header>
+      <ul class="ann-grid" th:unless="${#lists.isEmpty(annList)}">
+        <li th:each="ann : ${annList}">
+          <a class="ann-card" th:href="@{/announcement/{no}(no=${ann.annNo})}">
+            <div class="ann-thumb">
+              <!-- 有圖片才輸出 img；沒有圖片顯示 logo 佔位 -->
+              <img th:if="${ann.annImg != null}" loading="lazy"
+                th:src="@{/announcement/image/{no}(no=${ann.annNo})}" th:alt="${ann.annTitle}">
+              <div class="ann-thumb-empty" th:if="${ann.annImg == null}">
+                <img th:src="@{/common/images/logo-mark.svg}" alt="">
+              </div>
+            </div>
+            <div class="ann-card-body">
+              <time class="ann-date" th:datetime="${ann.annBegin}"
+                th:text="${#temporals.format(ann.annBegin, 'yyyy.MM.dd')}">2026.01.01</time>
+              <h2 class="ann-title" th:text="${ann.annTitle}">公告標題</h2>
+              <p class="ann-summary"
+                th:text="${ann.annText != null ? #strings.abbreviate(ann.annText, 70) : ''}">公告摘要</p>
+              <span class="ann-more">閱讀更多 <span aria-hidden="true">→</span></span>
+            </div>
+          </a>
+        </li>
+      </ul>
 
-      <figure class="ann-article-img" th:if="${ann.annImg != null}">
-        <img th:src="@{/announcement/image/{no}(no=${ann.annNo})}" th:alt="${ann.annTitle}">
-      </figure>
-
-      <!-- 用 th:text（不是 th:utext），內文的換行由 CSS 的 white-space: pre-line 保留 -->
-      <div class="ann-article-body" th:text="${ann.annText}">公告內文</div>
-
-      <div class="btn-center">
-        <a class="btn-outline" th:href="@{/announcement}">返回列表</a>
+      <!-- 沒有任何公告時 -->
+      <div class="ann-empty" th:if="${#lists.isEmpty(annList)}">
+        <p>目前沒有最新消息，敬請期待。</p>
+        <a class="btn-outline" th:href="@{/bistroops}">回首頁</a>
       </div>
-    </article>
+    </div>
   </main>
 
   <!-- ========== Footer（與首頁相同） ========== -->

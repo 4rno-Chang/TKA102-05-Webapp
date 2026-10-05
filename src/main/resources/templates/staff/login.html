@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bistroops 後台｜員工登入</title>
+  <link rel="icon" th:href="@{/common/images/logo-mark.svg}" type="image/svg+xml">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&display=swap">
+  <!-- staff.css 提供後台共用的顏色變數、按鈕、輸入框；login.css 只放登入頁自己的版面 -->
+  <link rel="stylesheet" th:href="@{/staff/css/staff.css}" />
+  <link rel="stylesheet" th:href="@{/staff/css/login.css}" />
+  <script th:src="@{/staff/js/login.js}" defer></script>
+</head>
+
+<body class="staff-login">
+  <main class="login-card">
+    <img class="login-logo" th:src="@{/common/images/logo-mark.svg}" alt="Bistroops">
+    <p class="staff-eyebrow">Bistroops Staff</p>
+    <h1 class="login-title">員工登入</h1>
+
+    <!-- 訊息：網址帶 ?error（帳密錯誤）或 ?logout（已登出）時才顯示，由 StaffSecurityConfig 設定 -->
+    <p class="login-msg login-msg-error" th:if="${param.error}" role="alert">員工編號或密碼錯誤，或帳號已停用</p>
+    <p class="login-msg login-msg-ok" th:if="${param.logout}" role="status">您已成功登出</p>
+
+    <!-- 送出後由 Spring Security 處理帳密比對（StaffSecurityConfig 的 loginProcessingUrl），不需要寫 Controller。
+         使用 th:action 時 Thymeleaf 會自動加上 _csrf 隱藏欄位，不能改成一般的 action。 -->
+    <form class="login-form" id="loginForm" th:action="@{/staff/login}" method="post">
+      <label class="login-field">
+        <span class="login-label">員工編號</span>
+        <!-- name 要和 StaffSecurityConfig 的 usernameParameter("empNo") 一致 -->
+        <input class="staff-input" type="text" name="empNo" id="empNo"
+          inputmode="numeric" autocomplete="username" placeholder="請輸入員工編號" required autofocus>
+      </label>
+
+      <label class="login-field">
+        <span class="login-label">密碼</span>
+        <span class="login-password">
+          <!-- name 要和 StaffSecurityConfig 的 passwordParameter("empPassword") 一致 -->
+          <input class="staff-input" type="password" name="empPassword" id="empPassword"
+            autocomplete="current-password" placeholder="請輸入密碼" required>
+          <button type="button" class="login-toggle" id="togglePassword" aria-label="顯示密碼" aria-pressed="false">顯示</button>
+        </span>
+      </label>
+
+      <button type="submit" class="staff-btn btn-pay login-submit" id="loginSubmit">登入</button>
+    </form>
+
+    <a class="login-back" th:href="@{/}">‹ 回入口頁</a>
+  </main>
+</body>
+
+</html>
