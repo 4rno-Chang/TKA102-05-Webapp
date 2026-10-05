@@ -11,8 +11,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet"
     href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&family=Noto+Serif+TC:wght@500;600&display=swap">
-  <link rel="stylesheet" th:href="@{/front/css/style.css}" />
-  <script th:src="@{/front/js/main.js}" defer></script>
+  <link rel="stylesheet" th:href="@{/front/common/css/style.css}" />
+  <script th:src="@{/front/index/js/main.js}" defer></script>
   <link rel="stylesheet" th:href="@{/front/member/css/member.css}" />
   <script th:src="@{/front/member/js/member.js}" defer></script>
 </head>
@@ -41,7 +41,7 @@
         <div class="member-menu">
           <button type="button" class="member-menu-toggle">
             <span class="member-avatar" aria-hidden="true">
-              <img th:src="@{/front/images/member.png}" alt="會員頭像">
+              <img th:src="@{/front/common/images/member.png}" alt="會員頭像">
             </span>
             會員中心
           </button>
@@ -69,9 +69,9 @@
 
       <div class="carousel" id="carousel">
         <div class="carousel-track">
-          <div class="slide"><img th:src="@{/front/images/promo-lunch.svg}" alt="平日午間套餐 85 折"></div>
-          <div class="slide"><img th:src="@{/front/images/promo-birthday.svg}" alt="壽星當月招待甜點"></div>
-          <div class="slide"><img th:src="@{/front/images/promo-reservation.svg}" alt="線上預約訂位現正開放"></div>
+          <div class="slide"><img th:src="@{/front/index/images/promo-lunch.svg}" alt="平日午間套餐 85 折"></div>
+          <div class="slide"><img th:src="@{/front/index/images/promo-birthday.svg}" alt="壽星當月招待甜點"></div>
+          <div class="slide"><img th:src="@{/front/index/images/promo-reservation.svg}" alt="線上預約訂位現正開放"></div>
         </div>
         <button class="carousel-arrow prev" aria-label="上一張">‹</button>
         <button class="carousel-arrow next" aria-label="下一張">›</button>
@@ -86,12 +86,12 @@
         <h2 class="section-title">精選菜單</h2>
         <div class="menu-grid">
           <a href="#" class="menu-card placeholder"
-            th:style="|background-image: url('@{/front/images/dish-appetizer.svg}')|"><span
+            th:style="|background-image: url('@{/front/index/images/dish-appetizer.svg}')|"><span
               class="menu-card-text">開胃菜<small>Appetizer</small></span></a>
-          <a href="#" class="menu-card placeholder" th:style="|background-image: url('@{/front/images/dish-main.svg}')|"><span
+          <a href="#" class="menu-card placeholder" th:style="|background-image: url('@{/front/index/images/dish-main.svg}')|"><span
               class="menu-card-text">主餐<small>main course</small></span></a>
           <a href="#" class="menu-card placeholder"
-            th:style="|background-image: url('@{/front/images/dish-dessert.svg}')|"><span
+            th:style="|background-image: url('@{/front/index/images/dish-dessert.svg}')|"><span
               class="menu-card-text">甜點<small>dessert</small></span></a>
         </div>
         <div class="btn-center"><a href="#" class="btn-outline">查看完整菜單</a></div>
@@ -114,7 +114,7 @@
       <div class="container">
         <!-- 滑鼠移入或點擊後，會蓋上半透明白底並顯示理念文字（效果在 style.css「8. 關於我們」、點擊在 main.js 第 7 區）
              之後要放背景圖：在下面這個 div 加上
-               th:style="|background-image: url('@{/front/images/圖片檔名}')|" -->
+               th:style="|background-image: url('@{/front/index/images/圖片檔名}')|" -->
         <div class="about-box placeholder" id="aboutBox" role="button" tabindex="0" aria-expanded="false">
           <span class="about-title">關於我們</span>
           <p class="about-overlay">

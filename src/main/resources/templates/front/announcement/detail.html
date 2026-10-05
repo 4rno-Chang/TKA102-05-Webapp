@@ -12,7 +12,7 @@
   <link rel="stylesheet"
     href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&family=Noto+Serif+TC:wght@500;600&display=swap">
   <!-- style.css：首頁的配色、header、footer；announcement.css：公告頁自己的版面 -->
-  <link rel="stylesheet" th:href="@{/front/css/style.css}" />
+  <link rel="stylesheet" th:href="@{/front/common/css/style.css}" />
   <link rel="stylesheet" th:href="@{/front/member/css/member.css}" />
   <link rel="stylesheet" th:href="@{/front/announcement/css/announcement.css}" />
   <!-- 不載入 main.js：它會抓首頁才有的輪播、FAQ 等元素，在這頁會出錯；版型需要的功能寫在 announcement.js -->
@@ -45,7 +45,7 @@
         <div class="member-menu">
           <button type="button" class="member-menu-toggle">
             <span class="member-avatar" aria-hidden="true">
-              <img th:src="@{/front/images/member.png}" alt="會員頭像">
+              <img th:src="@{/front/common/images/member.png}" alt="會員頭像">
             </span>
             會員中心
           </button>

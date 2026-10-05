@@ -2,7 +2,7 @@
    Bistroops 員工後台：登入頁程式
    內容：1. 員工編號只能輸入數字　2. 顯示／隱藏密碼　3. 防止重複送出
 
-   對應的 CSS：static/staff/css/login.css
+   對應的 CSS：static/staff/login/css/login.css
    帳密比對由 Spring Security 處理（StaffSecurityConfig），這裡只負責畫面上的小功能。
    ========================================================= */
 

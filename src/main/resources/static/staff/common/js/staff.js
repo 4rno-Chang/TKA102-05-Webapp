@@ -2,7 +2,7 @@
    Bistroops 員工後台：共用程式（每個後台頁面都要載入，而且要放在最前面）
    內容：1. 示範資料 StaffStore　2. 小工具　3. 小提示　4. 尚未開放的按鈕　5. 時鐘　6. 重設示範資料
 
-   對應的 CSS：static/staff/css/staff.css
+   對應的 CSS：static/staff/common/css/staff.css
    各頁面自己的程式：staff-workboard.js／staff-checkout.js／staff-orders.js
 
    ※ 目前畫面用的是假資料。Java 寫好後要改的地方都標了「Thymeleaf 串接」，
@@ -29,7 +29,7 @@
      提示寫在哪裡（每個檔案用 Ctrl+F 搜尋「Thymeleaf 串接」）：
        StaffPageController.java   每個網址要準備的資料、要新增哪些 @PostMapping（先看這裡的總覽）
        templates/staff/*.html     每一塊畫面要換成的 th:each／th:text／表單，可以直接照著改
-       static/js/staff-*.js       哪些程式之後可以刪掉、哪些要保留
+       static/staff/*/js/staff-*.js 哪些程式之後可以刪掉、哪些要保留
 
      下面「一筆訂單的格式」可以當作設計資料表欄位的參考：
      訂單一張表、餐點一張表（餐點用訂單編號連回訂單），狀態存成文字或數字都可以。
