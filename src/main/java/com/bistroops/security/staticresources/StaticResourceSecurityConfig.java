@@ -13,7 +13,7 @@ public class StaticResourceSecurityConfig {
 	@Bean
 	@Order(0) // 注意：@Order 要加在 @Bean 方法上，加在 class 上對 SecurityFilterChain 無效
 	public SecurityFilterChain staticResourceFilterChain(HttpSecurity http) throws Exception {
-		http.securityMatcher("/common/**", "/entry/**", "/front/**", "/staff/css/**", "/staff/js/**", "/webjars/**", "/favicon.ico")
+		http.securityMatcher("/css/**", "/js/**", "/images/**", "/webjars/**", "/favicon.ico")
 				.authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
 		return http.build();
 	}
