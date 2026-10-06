@@ -19,7 +19,7 @@ public class StaffLoginController {
 	// 權限不足頁（StaffSecurityConfig 的 accessDeniedPage 會轉到這裡）
 	@RequestMapping("/403")
 	public String accessDenied() {
-		return "staff/403";
+		return "staff/error/403";
 	}
 
 }
