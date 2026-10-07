@@ -15,7 +15,7 @@ import com.bistroops.announcement.model.AnnouncementVO;
 
 // 前台(顧客)公告：只能瀏覽已開始的公告
 @Controller
-@RequestMapping("/announcement")
+@RequestMapping("/bistroops/announcement")
 public class FrontAnnouncementController {
 
 	@Autowired
@@ -33,7 +33,7 @@ public class FrontAnnouncementController {
 
 		// 查無資料或尚未開始，導回公告列表
 		if (ann == null) {
-			return "redirect:/announcement";
+			return "redirect:/bistroops/announcement";
 		}
 
 		model.addAttribute("ann", ann);

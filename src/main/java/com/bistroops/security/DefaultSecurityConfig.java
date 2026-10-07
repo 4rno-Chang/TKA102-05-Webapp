@@ -6,7 +6,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 
-// 沒被前面 chain 接住的請求（前台 /、/announcement/** 等）都到這裡
+// 沒被前面 chain 接住的請求（前台 /、/bistroops/announcement/** 等）都到這裡
 @Configuration
 public class DefaultSecurityConfig {
 
