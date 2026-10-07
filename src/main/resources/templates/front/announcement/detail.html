@@ -11,11 +11,11 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet"
     href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&family=Noto+Serif+TC:wght@500;600&display=swap">
-  <!-- style.css：顏色、字型變數與前台共用的 header、footer；announcement.css：公告頁自己的版面 -->
-  <link rel="stylesheet" th:href="@{/css/front/style.css}" />
+  <!-- front.css：顏色、字型變數與前台共用的 header、footer；announcement.css：公告頁自己的版面 -->
+  <link rel="stylesheet" th:href="@{/css/front/front.css}" />
   <link rel="stylesheet" th:href="@{/css/front/member.css}" />
   <link rel="stylesheet" th:href="@{/css/front/announcement.css}" />
-  <!-- 不載入 main.js：它會抓首頁才有的輪播、FAQ 等元素，在這頁會出錯；版型需要的功能寫在 announcement.js -->
+  <!-- 不載入 frontend_index.js：它會抓首頁才有的輪播、FAQ 等元素，在這頁會出錯；版型需要的功能寫在 announcement.js -->
   <script th:src="@{/js/front/member.js}" defer></script>
   <script th:src="@{/js/front/announcement.js}" defer></script>
 </head>
@@ -30,7 +30,7 @@
        ann：FrontAnnouncementController 放入；查無資料或尚未開始時 Controller 會導回列表 -->
   <main class="ann-page section">
     <article class="container ann-article">
-      <a class="ann-back" th:href="@{/announcement}">‹ 返回最新消息</a>
+      <a class="ann-back" th:href="@{/bistroops/announcement}">‹ 返回最新消息</a>
 
       <header class="ann-article-head">
         <time class="ann-date" th:datetime="${ann.annBegin}"
@@ -39,14 +39,14 @@
       </header>
 
       <figure class="ann-article-img" th:if="${ann.annImg != null}">
-        <img th:src="@{/announcement/image/{no}(no=${ann.annNo})}" th:alt="${ann.annTitle}">
+        <img th:src="@{/bistroops/announcement/image/{no}(no=${ann.annNo})}" th:alt="${ann.annTitle}">
       </figure>
 
       <!-- 用 th:text（不是 th:utext），內文的換行由 CSS 的 white-space: pre-line 保留 -->
       <div class="ann-article-body" th:text="${ann.annText}">公告內文</div>
 
       <div class="btn-center">
-        <a class="btn-outline" th:href="@{/announcement}">返回列表</a>
+        <a class="btn-outline" th:href="@{/bistroops/announcement}">返回列表</a>
       </div>
     </article>
   </main>

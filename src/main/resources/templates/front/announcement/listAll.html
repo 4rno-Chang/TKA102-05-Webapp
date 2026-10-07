@@ -11,11 +11,11 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet"
     href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&family=Noto+Serif+TC:wght@500;600&display=swap">
-  <!-- style.css：顏色、字型變數與前台共用的 header、footer；announcement.css：公告頁自己的版面 -->
-  <link rel="stylesheet" th:href="@{/css/front/style.css}" />
+  <!-- front.css：顏色、字型變數與前台共用的 header、footer；announcement.css：公告頁自己的版面 -->
+  <link rel="stylesheet" th:href="@{/css/front/front.css}" />
   <link rel="stylesheet" th:href="@{/css/front/member.css}" />
   <link rel="stylesheet" th:href="@{/css/front/announcement.css}" />
-  <!-- 不載入 main.js：它會抓首頁才有的輪播、FAQ 等元素，在這頁會出錯；版型需要的功能寫在 announcement.js -->
+  <!-- 不載入 frontend_index.js：它會抓首頁才有的輪播、FAQ 等元素，在這頁會出錯；版型需要的功能寫在 announcement.js -->
   <script th:src="@{/js/front/member.js}" defer></script>
   <script th:src="@{/js/front/announcement.js}" defer></script>
 </head>
@@ -35,11 +35,11 @@
 
       <ul class="ann-grid" th:unless="${#lists.isEmpty(annList)}">
         <li th:each="ann : ${annList}">
-          <a class="ann-card" th:href="@{/announcement/{no}(no=${ann.annNo})}">
+          <a class="ann-card" th:href="@{/bistroops/announcement/{no}(no=${ann.annNo})}">
             <div class="ann-thumb">
               <!-- 有圖片才輸出 img；沒有圖片顯示 logo 佔位 -->
               <img th:if="${ann.annImg != null}" loading="lazy"
-                th:src="@{/announcement/image/{no}(no=${ann.annNo})}" th:alt="${ann.annTitle}">
+                th:src="@{/bistroops/announcement/image/{no}(no=${ann.annNo})}" th:alt="${ann.annTitle}">
               <div class="ann-thumb-empty" th:if="${ann.annImg == null}">
                 <img th:src="@{/images/logo-mark.svg}" alt="">
               </div>
