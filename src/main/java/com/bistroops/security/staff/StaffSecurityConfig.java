@@ -30,7 +30,9 @@ public class StaffSecurityConfig {
 					.requestMatchers("/staff/login")
 					.permitAll()     // 登入頁一定要放行，否則會無限重導
 					.requestMatchers("/staff/announcement/**")
-					.hasAuthority("PERM_5") // 5 = 公告設定
+					.hasAuthority("PERM_7") // 7 = 後臺管理（G1 的權限表沒有「公告設定」）
+					.requestMatchers("/staff/seating", "/staff/seating/**")
+					.hasAuthority("PERM_3") // 3 = 入座管理
 					.anyRequest()
 					.authenticated());     // 其他後台頁面：登入後才能進
 		} else {

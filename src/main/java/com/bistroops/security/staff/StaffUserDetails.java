@@ -20,7 +20,7 @@ public class StaffUserDetails implements UserDetails {
 		this.empNo = emp.getEmpNo();
 		this.empName = emp.getEmpName();
 		this.password = emp.getEmpPassword();
-		this.enabled = "在職".equals(emp.getEmpStatus()); // 離職員工不能登入
+		this.enabled = "1".equals(emp.getEmpStatus()); // 1 在職、2 停用；停用員工不能登入
 		this.authorities = authorities;
 	}
 
@@ -68,7 +68,7 @@ public class StaffUserDetails implements UserDetails {
 		return true;
 	}
 
-	// 是否擁有某個權限，例如 hasPerm(5) → 是否有 PERM_5（公告設定）
+	// 是否擁有某個權限，例如 hasPerm(3) → 是否有 PERM_3（入座管理）
 	public boolean hasPerm(int permNo) {
 		return authorities.stream().anyMatch(a -> a.getAuthority().equals("PERM_" + permNo));
 	}
