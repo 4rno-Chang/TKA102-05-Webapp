@@ -46,10 +46,10 @@
             </div>
             <div class="ann-card-body">
               <time class="ann-date" th:datetime="${ann.annBegin}"
-                th:text="${#temporals.format(ann.annBegin, 'yyyy.MM.dd')}">2026.01.01</time>
-              <h2 class="ann-title" th:text="${ann.annTitle}">公告標題</h2>
+                th:text="${#temporals.format(ann.annBegin, 'yyyy.MM.dd')}"></time>
+              <h2 class="ann-title" th:text="${ann.annTitle}"></h2>
               <p class="ann-summary"
-                th:text="${ann.annText != null ? #strings.abbreviate(ann.annText, 70) : ''}">公告摘要</p>
+                th:text="${ann.annText != null ? #strings.abbreviate(ann.annText, 70) : ''}"></p>
               <span class="ann-more">閱讀更多 <span aria-hidden="true">→</span></span>
             </div>
           </a>
