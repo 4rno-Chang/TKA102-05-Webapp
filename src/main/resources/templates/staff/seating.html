@@ -58,8 +58,8 @@
     </nav>
 
     <!-- 操作結果（flash） -->
-    <p class="seat-flash ok" th:if="${message}" th:text="${message}" role="status">A02：其它者入座</p>
-    <p class="seat-flash err" th:if="${error}" th:text="${error}" role="alert">A02 目前不能入座</p>
+    <p class="seat-flash ok" th:if="${message}" th:text="${message}" role="status">其它者入座</p>
+    <p class="seat-flash err" th:if="${error}" th:text="${error}" role="alert">目前不能入座</p>
 
     <!-- ================= 平面圖 ================= -->
     <th:block th:if="${page.view == 'floor'}">
@@ -131,7 +131,7 @@
               <p class="stat-label" th:text="|超過 ${page.est} 分鐘|">超過 90 分鐘</p>
               <p class="stat-value"><th:block th:text="${page.lateCount}">2</th:block><small>桌</small></p>
               <th:block th:if="${page.lateCount > 0}">
-                <p class="late-split"><span>需提醒 <b th:text="${page.urgentCount}">1</b></span><span th:text="|不影響 ${page.lateCount - page.urgentCount}|">不影響 1</span></p>
+                <p class="late-split"><span>需提醒 <b th:text="${page.urgentCount}">1</b></span><span>不影響 <b class="mild" th:text="${page.lateCount - page.urgentCount}">1</b></span></p>
                 <p class="stat-label small" th:text="${page.filter == 'late'} ? '再點一下看全部' : '點一下只看這些桌子'">點一下只看這些桌子</p>
               </th:block>
               <p class="stat-label small" th:unless="${page.lateCount > 0}">目前沒有</p>
@@ -255,7 +255,7 @@
      外層的 th:remove="all" 讓這段定義本身不會被畫在頁面上；上面用 th:replace 引用時照常使用 -->
 <th:block th:remove="all">
 <th:block th:fragment="seatLink(seat, page)">
-  <a class="seat" th:classappend="|t${seat.type} ${seat.cls}${seat.selected ? ' selected' : ''}${seat.dim ? ' dim' : ''}${seat.urgent ? ' urgent' : ''}${seat.anomaly ? ' anomaly' : ''}${seat.placed ? '' : ' loose'}|"
+  <a class="seat" th:classappend="|t${seat.type} ${seat.cls}${seat.selected ? ' selected' : ''}${seat.dim ? ' dim' : ''}${seat.urgent ? ' urgent' : ''}${seat.late and !seat.urgent ? ' mild' : ''}${seat.anomaly ? ' anomaly' : ''}${seat.placed ? '' : ' loose'}|"
      th:style="${seat.placed} ? |left:${seat.x}%;top:${seat.y}%|"
      th:href="@{/staff/seating(type=${page.filter},seat=${seat.no})}" th:title="${seat.title}" th:aria-label="${seat.title}">
     <i class="chair c1"></i><i class="chair c2"></i><i class="chair c3"></i>
@@ -295,9 +295,9 @@
     <p class="notice warn" th:if="${panel.anomaly}"
        th:text="|入座時間 ${panel.seatTime} 比現在還晚。資料只有時間沒有日期，多半是之前沒清桌，請確認後按「客人離席」。|">入座時間異常</p>
     <th:block th:unless="${panel.anomaly}">
-      <div class="meter" th:classappend="${panel.meterLevel}"><i th:style="|width:${panel.meterPct}%|"></i></div>
+      <div class="meter" th:classappend="|${panel.meterLevel}${panel.lateUrgent ? '' : ' mild'}|"><i th:style="|width:${panel.meterPct}%|"></i></div>
       <p class="meter-label">已用餐 <b th:text="${panel.mins}">40</b> 分鐘／固定 <th:block th:text="${page.est}">90</th:block> 分鐘
-        <b class="hot" th:if="${panel.meterLevel == 'over'}">已超過</b></p>
+        <b class="hot" th:if="${panel.meterLevel == 'over'}" th:classappend="${panel.lateUrgent} ? '' : 'mild'">已超過</b></p>
       <p class="notice warn" th:if="${panel.lateUrgent}" th:text="|建議提醒客人：${panel.lateReason}。|">建議提醒客人</p>
       <p class="notice info" th:if="${panel.lateReason != null and !panel.lateUrgent}" th:text="|${panel.lateReason}。|">不影響</p>
     </th:block>

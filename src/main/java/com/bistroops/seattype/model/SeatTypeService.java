@@ -459,7 +459,7 @@ public class SeatTypeService {
 					0, 0));
 		}
 
-		// 現在這組客人：從入座到「入座 + 90 分鐘」和「現在」較晚的那一個；實心到現在，超時的部分是紅色
+		// 現在這組客人：從入座到「入座 + 90 分鐘」和「現在」較晚的那一個；實心到現在，超時的部分需提醒是紅色、不影響是橘色
 		if (seatedMin != null) {
 			int end = seatedMin + EST;
 			int right = Math.max(end, snap.now);
@@ -467,7 +467,7 @@ public class SeatTypeService {
 			String level = snap.lateLevel(s);
 			String pay = snap.activeOrders(s).isEmpty() ? "尚未點餐" : snap.isPaid(s) ? "已結帳" : "未結帳";
 			String text = pay + "・" + snap.minsOf(s) + " 分";
-			blocks.add(block("now", "blk now " + statusClass(s) + ("urgent".equals(level) ? " over" : ""),
+			blocks.add(block("now", "blk now " + statusClass(s) + ("urgent".equals(level) ? " over" : "mild".equals(level) ? " mild" : ""),
 					pct.of(seatedMin), Math.max(pct.of(right) - pct.of(seatedMin), 0.8), text,
 					s.getSeatNo() + " " + text + "，預計 " + fmt(end) + " 離開" + (level == null ? "" : "；" + snap.lateReason(s)),
 					round(Math.min(snap.now - seatedMin, EST) / span * 100), round(snap.now > end ? (snap.now - end) / span * 100 : 0)));
