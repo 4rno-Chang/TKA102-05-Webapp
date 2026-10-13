@@ -1,11 +1,13 @@
 /* =========================================================
-   入座管理測試用的建表 SQL（只用正式時段 11:00、12:30、17:00、18:30，和 CJ 的訂位頁一致）
-   = createTable_v1_4.sql（G1 原版，0f5c170）＋ 入座管理「現在」的測試資料（19～27，壓力測試版）
-   和原版一樣：刪掉整個資料庫 → 建表 → 新增資料 → 修改測試資料 → 加外鍵，可以重複執行
-   另外暫時補上 waiting 的三個欄位（22-0，等 CJ 補進建表 SQL 後刪除）
+   示範／測試用的建表 SQL（只用正式時段 11:00、12:30、17:00、18:30，和 CJ 的訂位頁一致）
+   = createTable_v1_4.sql（G1 原版，56c40fe；v1_4 最後修改 1286fd1）＋ 05 新增的欄位 ＋ 測試資料（19～27，正式時段版）
+   和原版一樣：刪掉整個資料庫 → 建表 → 新增資料 → 測試資料 → 加外鍵，可以重複執行；ALTER TABLE 只用來加外鍵
+   05 新增的欄位直接寫在 CREATE TABLE 裡（旁邊註明「G1 v1_4 沒有，05 新增」）：
+     qa.qa_clicks（常見問題點擊次數）
+     waiting.waiting_date、waiting_take_time、waiting_ticket_seq（CJ 的 WaitingVO 有，v1_4 還沒有）
    19～27 的時間從「執行的當下」推算：整天任何時間都能執行，執行完馬上測（預期結果寫在 19 段上方）
    權限、員工照 G1：員工 1（陳小心，密碼 0987878787）有 1～7 全部權限，3 = 入座管理
-   測完要回到原版資料：重跑 createTable_v1_4.sql
+   要回到 G1 原版資料：重跑 createTable_v1_4.sql（但 v1_4 沒有 qa_clicks，首頁常見問題會出錯，05 請用這一份）
    ========================================================= */
 /*SHOW DATABASES;*/
 DROP DATABASE IF EXISTS project;
@@ -170,6 +172,9 @@ CREATE TABLE IF NOT EXISTS waiting (
   waiting_comment VARCHAR(20) COMMENT '備註',
   waiting_status VARCHAR(3) COMMENT '狀態',
   waiting_notify_time TIME COMMENT '通知時間',
+  waiting_date DATE NULL COMMENT '候位日期',                     -- G1 v1_4 沒有，05 新增（CJ 的 WaitingVO 有這三個欄位）
+  waiting_take_time DATETIME NULL COMMENT '抽號時間',            -- 同上
+  waiting_ticket_seq INT NULL COMMENT '當天這個桌型的號碼',      -- 同上
   PRIMARY KEY (waiting_no)
 ) COMMENT = '候位';
 
@@ -219,6 +224,7 @@ CREATE TABLE IF NOT EXISTS qa(
   qa_no INT UNSIGNED AUTO_INCREMENT COMMENT '編號',
   qa_title VARCHAR(30) COMMENT '標題',
   qa_content MEDIUMTEXT COMMENT '內容',
+  qa_clicks INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '點擊次數',   -- G1 v1_4 沒有，05 新增（首頁常見問題顯示點擊最多的 5 題）
   PRIMARY KEY(qa_no)
 ) COMMENT '常見問題';
 
@@ -518,10 +524,27 @@ INSERT INTO feedback (orders_no, fee_customer, fee_customer_tel, fee_customer_ti
 INSERT INTO announcement (ann_title, ann_begin, ann_img, ann_text) VALUES 
 ('歡慶開幕！全館飲品8折', '2026-08-01 10:00:00', NULL, '即日起至月底，內用點選任意主餐即享飲品加購8折優惠！');
 
--- 18. QA (qa)
-INSERT INTO qa (qa_title, qa_content) VALUES
-('請問有提供素食餐點嗎？', '我們提供蛋奶素及全素的義大利麵與披薩，歡迎向服務人員諮詢。'),
-('訂位最多可以接受幾人？', '線上訂位最多支援6人桌型，6人以上團體用餐請來電預約。');
+-- 18. QA (qa)：1、2 是 G1 原本的題目，3～11 是 05 新增；qa_clicks 是示範用的點擊次數（首頁顯示最多的 5 題）
+INSERT INTO qa (qa_title, qa_content, qa_clicks) VALUES
+('請問有提供素食餐點嗎？', '我們提供蛋奶素及全素的義大利麵與披薩，歡迎向服務人員諮詢。', 52),
+('訂位最多可以接受幾人？', '線上訂位最多支援6人桌型，6人以上團體用餐請來電預約。', 128),
+('線上訂位需要先登入會員嗎？', '需要。請先登入會員再進行訂位；尚未註冊的顧客可以使用手機號碼註冊會員。', 64),
+('可以預約多久以後的日期？', '開放預約含今日起算90天內的日期。', 41),
+('有哪些用餐時段可以預約？', '午餐 11:00、12:30，晚餐 17:00、18:30。當天已經開始的時段無法預約。', 96),
+('一次可以訂多張桌子嗎？', '每次限訂1桌（2人、4人或6人桌）；多桌或包場需求請來電洽詢。', 27),
+('訂位後想更改或取消怎麼辦？', '請在「會員中心」取消尚未開始的訂位；日期、時段或桌型需要更換時，請取消後重新訂位。', 75),
+('沒有訂位可以現場候位嗎？', '可以，請至現場領取號碼牌。上午最晚發放至12:30，下午最晚發放至18:30，叫號進度可以在「候位狀況」頁面查看。', 87),
+('候位可以取消或更換桌型嗎？', '可以在「候位狀況」頁面的「查詢候位」輸入手機取消候位；桌型無法線上修改，如需更換請取消後重新取號。', 12),
+('結帳可以使用哪些付款方式？', '目前提供現金及刷卡付款。', 19),
+('用餐時間有限制嗎？', '每組用餐時間以90分鐘為原則，敬請配合。', 33);
+
+/* =========================================================
+   以下是 05 的測試資料（19～27），放在加外鍵之前，和原版一樣「資料放好再加外鍵」
+   寫法：INSERT … VALUES、INSERT … SELECT … JOIN、UPDATE … JOIN
+   JOIN 只在執行這份 SQL 的時候跑一次（Java 程式不會呼叫），用來模擬「已經發生過的操作」：
+     客人到了沒（訂位狀態）、點了什麼（明細單價）、算好的金額；正式流程是組員的程式在操作當下寫進去的
+   JOIN 要讀前面已經新增的資料，順序不能調換：20 → 21（時段 → 訂位）、25 → 26 → 27（訂單 → 明細 → 金額）
+   ========================================================= */
 
 /* =========================================================
    入座管理「現在」的測試資料（19～27，壓力測試版：只用正式時段 11:00、12:30、17:00、18:30）
@@ -532,7 +555,7 @@ INSERT INTO qa (qa_title, qa_content) VALUES
    新增的會員 7～16 前台登入密碼都是 Test0004（和會員 4 共用同一個雜湊）
 
    ---------- 執行後馬上看 ----------
-   桌位、訂單、候位和另一份（createTable_test_seating.sql）一樣：
+   桌位、訂單、候位和另一份（createTable_demo.sql）一樣：
      17 桌；A06、B01 一打開就自動清桌；超時 A03 A04 B02；時間異常 A09；B04 差 1 分鐘超時；
      A02 共 2 張訂單 1 張未結帳；B05 有 1 張已取消；用餐中 9 / 16 桌；本日訂單 21 張；
      候位：2 人桌 3 組（張先生已通知）、4 人桌 1 組、6 人桌 2 組
@@ -620,14 +643,7 @@ FROM (
   UNION ALL SELECT 31, 13, 9,  2, 3, '預約', '預約', '昨天的訂位'
   UNION ALL SELECT 32, 14, 10, 4, 0, '預約', '預約', '明天的訂位'
 ) AS r
-JOIN reservation_datetime d ON d.rsv_dt_no = r.rsv_dt_no;
-
--- 22-0.【等 CJ 補進 createTable_v1_4.sql 後刪除】WaitingVO（G1 10/13）多了 waiting_date、waiting_take_time、waiting_ticket_seq，
---       但 G1 的建表 SQL 沒有這三個欄位，少了它們所有讀候位的頁面（包含入座管理）都會出現 Unknown column。
-ALTER TABLE waiting
-  ADD COLUMN waiting_date DATE NULL COMMENT '候位日期',
-  ADD COLUMN waiting_take_time DATETIME NULL COMMENT '抽號時間',
-  ADD COLUMN waiting_ticket_seq INT NULL COMMENT '當天這個桌型的號碼';
+JOIN reservation_datetime d ON d.rsv_dt_no = r.rsv_dt_no;   -- JOIN：查時段時間，過了用 past_status、還沒到用 future_status
 
 -- 22. 今天的候位 (waiting 4～12)：候位中、已通知會出現；已入座、過號、取消不會
 INSERT INTO waiting (waiting_no, seat_type_no, mem_no, waiting_tel, waiting_name, waiting_comment, waiting_status, waiting_notify_time, waiting_date, waiting_take_time, waiting_ticket_seq) VALUES
@@ -740,11 +756,12 @@ FROM (
   UNION ALL SELECT 28, 4,  1, '', '已送達'
   UNION ALL SELECT 29, 5,  1, '', '已取消'
 ) AS d
-JOIN meal m ON m.meal_no = d.meal_no
-JOIN orders o ON o.orders_no = d.orders_no
+JOIN meal m ON m.meal_no = d.meal_no            -- JOIN：從 meal 讀單價（不寫死，G1 改價格也會跟著變）
+JOIN orders o ON o.orders_no = d.orders_no      -- JOIN：讀下單時間，推算已送達的時間
 ORDER BY d.orders_no, d.meal_no;
 
 -- 27. 訂單金額：從明細加總（只更新 4～29；全部取消的單金額是 0）
+-- JOIN：把第 26 節的明細加總，寫回訂單的金額
 UPDATE orders o
 JOIN (
   SELECT orders_no, SUM(CASE WHEN od_status = '已取消' THEN 0 ELSE od_actual_price END) AS total
