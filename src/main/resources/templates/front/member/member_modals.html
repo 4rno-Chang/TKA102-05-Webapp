@@ -63,17 +63,27 @@
 
 						<div class="field">
 							<label for="loginPassword">密碼</label>
+
 							<div class="input-wrap">
 								<input type="password" id="loginPassword" name="password"
 									autocomplete="current-password">
+
 								<button type="button" class="pw-toggle" data-pw-toggle
 									aria-label="顯示密碼">
 									<svg viewBox="0 0 24 24" aria-hidden="true">
-										<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" />
-										<circle cx="12" cy="12" r="3" />
-										<line class="slash" x1="4" y1="4" x2="20" y2="20" /></svg>
+                <path
+											d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" />
+                <circle cx="12" cy="12" r="3" />
+                <line class="slash" x1="4" y1="4" x2="20" y2="20" />
+            </svg>
 								</button>
 							</div>
+
+							<p id="loginDefaultPasswordHint"
+								th:attr="data-check-url=@{/member/default-password-hint}"
+								aria-live="polite" hidden
+								style="margin: 10px 0 0; color: #b88636; font-size: 14px; line-height: 1.6;">
+								您的電話有註冊過，密碼為預設"00000000"</p>
 						</div>
 
 						<div class="field">
@@ -339,10 +349,10 @@
 
 					<h2 class="member-greeting" id="memberGreeting">
 						<span
-							th:if="${session.member != null and session.member.memName != null and !session.member.memName.isBlank()}"
-							th:text="${session.member.memName}"></span> <span
-							th:if="${session.member != null and (session.member.memName == null or session.member.memName.isBlank())}"
-							th:text="${session.member.memTel}"></span> 會員，你好
+							th:if="${member != null and member.memName != null and !member.memName.isBlank()}"
+							th:text="${member.memName}"></span> <span
+							th:if="${member != null and (member.memName == null or member.memName.isBlank())}"
+							th:text="${member.memTel}"></span> 會員，你好
 					</h2>
 				</div>
 
@@ -353,13 +363,13 @@
 						<button type="button" data-member-tab="profile">個人資料</button>
 
 						<button type="button" data-member-tab="orders"
-							th:disabled="${session.member == null or session.member.memStatus != '已驗證'}">歷史訂單</button>
+							th:disabled="${member == null or member.memStatus != '已驗證'}">歷史訂單</button>
 
 						<button type="button" data-member-tab="reservations"
-							th:disabled="${session.member == null or session.member.memStatus != '已驗證'}">預約紀錄</button>
+							th:disabled="${member == null}">預約紀錄</button>
 
 						<button type="button" data-member-tab="coupons"
-							th:disabled="${session.member == null or session.member.memStatus != '已驗證'}">優惠券</button>
+							th:disabled="${member == null or member.memStatus != '已驗證'}">優惠券</button>
 
 						<button type="button" data-logout>登出</button>
 
@@ -388,14 +398,14 @@
             -->
 							<form id="profileForm" th:action="@{/member/update}"
 								method="post"
-								th:attr="data-birthday=${session.member?.memBirth}" novalidate>
+								th:attr="data-birthday=${member?.memBirth}" novalidate>
 								<input type="hidden" id="profileReturnUrl" name="returnUrl">
 
 								<div class="field">
 									<label for="profileName">姓名</label> <input type="text"
 										id="profileName" name="name" maxlength="20"
-										autocomplete="name" th:value="${session.member?.memName}"
-										th:disabled="${session.member == null or session.member.memStatus != '已驗證'}">
+										autocomplete="name" th:value="${member?.memName}"
+										th:disabled="${member == null or member.memStatus != '已驗證'}">
 									<p class="form-msg error" id="profileNameMsg" hidden>
 										※姓名只能輸入中文或英文</p>
 								</div>
@@ -403,8 +413,8 @@
 								<div class="field">
 									<label for="profileEmail">Email</label> <input type="email"
 										id="profileEmail" name="email" placeholder="填寫可獲取最新消息通知"
-										autocomplete="email" th:value="${session.member?.memMail}"
-										th:disabled="${session.member == null or session.member.memStatus != '已驗證'}">
+										autocomplete="email" th:value="${member?.memMail}"
+										th:disabled="${member == null or member.memStatus != '已驗證'}">
 									<p class="form-msg error" id="profileEmailMsg" hidden>
 										※Email 格式不正確</p>
 								</div>
@@ -414,18 +424,19 @@
 
 									<div class="field-row">
 										<input type="tel" id="profilePhone" name="phone"
-											th:value="${session.member?.memTel}" readonly>
+											th:value="${member?.memTel}" readonly>
 
 										<button type="button" class="btn-small"
 											id="verifyPhoneSendCode"
-											th:if="${session.member != null and session.member.memStatus != '已驗證'}">
+											th:if="${member != null and member.memStatus != '已驗證'}">
 											發送驗證碼</button>
 
-										<span class="field-static verified" th:if="${session.member != null and session.member.memStatus == '已驗證'}">已驗證</span>
+										<span class="field-static verified"
+											th:if="${member != null and member.memStatus == '已驗證'}">已驗證</span>
 									</div>
 
 									<div
-										th:if="${session.member != null and session.member.memStatus != '已驗證'}">
+										th:if="${member != null and member.memStatus != '已驗證'}">
 										<label for="verifyPhoneCode">輸入驗證碼</label>
 
 										<div class="field-row">
@@ -445,8 +456,8 @@
 									<label for="profileBarcode">手機條碼載具</label> <input type="text"
 										id="profileBarcode" name="memBarcode" maxlength="8"
 										placeholder="/ABC1234"
-										th:value="${session.member?.memBarcode}"
-										th:disabled="${session.member == null or session.member.memStatus != '已驗證'}">
+										th:value="${member?.memBarcode}"
+										th:disabled="${member == null or member.memStatus != '已驗證'}">
 									<p class="form-msg" id="profileBarcodeMsg" hidden></p>
 								</div>
 
@@ -454,13 +465,13 @@
 									<label for="birthYear">生日</label>
 									<div class="birthday-row">
 										<select id="birthYear" name="birthYear" aria-label="年"
-											th:disabled="${session.member == null or session.member.memStatus != '已驗證'}"></select><span>年</span>
+											th:disabled="${member == null or member.memStatus != '已驗證'}"></select><span>年</span>
 
 										<select id="birthMonth" name="birthMonth" aria-label="月"
-											th:disabled="${session.member == null or session.member.memStatus != '已驗證'}"></select><span>月</span>
+											th:disabled="${member== null or member.memStatus != '已驗證'}"></select><span>月</span>
 
 										<select id="birthDay" name="birthDay" aria-label="日"
-											th:disabled="${session.member == null or session.member.memStatus != '已驗證'}"></select><span>日</span>
+											th:disabled="${member == null or member.memStatus != '已驗證'}"></select><span>日</span>
 									</div>
 								</div>
 
@@ -471,10 +482,10 @@
 
 									<button type="button" class="btn-outline"
 										data-member-tab="password"
-										th:disabled="${session.member == null or session.member.memStatus != '已驗證'}">更改密碼</button>
+										th:disabled="${member == null or member.memStatus != '已驗證'}">更改密碼</button>
 
 									<button type="submit" class="btn-solid"
-										th:disabled="${session.member == null or session.member.memStatus != '已驗證'}">送出</button>
+										th:disabled="${member == null or member.memStatus != '已驗證'}">送出</button>
 
 								</div>
 							</form>
@@ -504,7 +515,7 @@
 
 									<div class="field-row">
 										<span class="field-static" id="changePwPhone"
-											th:text="${session.member?.memTel}">09XXXXXXXX</span>
+											th:text="${member?.memTel}">09XXXXXXXX</span>
 										<button type="button" class="btn-small" id="changePwSendCode">發送驗證碼</button>
 									</div>
 
@@ -569,44 +580,54 @@
               Controller 把登入會員的訂單清單放進 Model（名稱 orders），沒登入時放空的清單。
               把下面那行 div 換成這一段，th:each 會替每一筆訂單產生一塊畫面：-->
 
-                <div class="record-list" id="ordersList"> 
-                  <p class="empty-text" th:if="${#lists.isEmpty(orders)}">目前沒有訂單紀錄</p>
+							<div class="record-list" id="ordersList">
+								<p class="empty-text" th:if="${#lists.isEmpty(orders)}">目前沒有訂單紀錄</p>
 
-                  <div class="record-item" th:each="order : ${orders}">
-                    <button type="button" class="record-head" data-toggle-record aria-expanded="false">
-                      <span class="record-info">
-                        <span th:text="${#temporals.format(order.ordersTime,'yyyy年 MM月 dd日  HH:mm')}">2026年09月20日 11:30</span>
-                        <!-- <span th:text="|${order.people} 人|">3 人</span> -->
-                        <!-- <span th:text="${order.type}">用餐</span> -->
-                        <span class="num" th:text=" '$' + ${order.ordersActualPrice}">$100</span>
-                      </span>
-                      <span class="record-icon">+</span>
-                    </button>
-	                    <div class="record-body" hidden>
-	                      <table class="order-table">
-	                        <thead><tr><th>品項</th><th class="num">數量</th><th class="num">小計</th></tr></thead>
-	                        <tbody>
-	                          <tr th:each="item : ${order.ordersDetails}">
-	                            <td th:text="${item.meal.mealName}">品項名稱</td>
-	                            <td class="num" th:text="|× ${item.odMealNum}|">× 1</td>
-	                            <td class="num" th:text="'$' + ${item.odDiscountPrice * item.odMealNum}">$100</td>
-	                          </tr>
-	                        </tbody>
-	                      </table>
-	                      <!-- <p class="order-total" th:text="'合計　$' + ${order.total}">合計　$100</p> -->
-	                    </div>
-                  </div>
-                </div>
+								<div class="record-item" th:each="order : ${orders}">
+									<button type="button" class="record-head" data-toggle-record
+										aria-expanded="false">
+										<span class="record-info"> <span
+											th:text="'訂單編號：'+${#numbers.formatInteger(order.orders,8)}">訂單編號:00000001</span>
+											<span
+											th:text="${#temporals.format(order.ordersTime,'yyyy年 MM月 dd日  HH:mm')}">2026年09月20日
+												11:30</span> <!-- <span th:text="|${order.people} 人|">3 人</span> -->
+											<!-- <span th:text="${order.type}">用餐</span> --> <span
+											class="num" th:text=" '$' + ${order.ordersActualPrice}">$100</span>
+										</span> <span class="record-icon">+</span>
+									</button>
+									<div class="record-body" hidden>
+										<table class="order-table">
+											<thead>
+												<tr>
+													<th>品項</th>
+													<th class="num">數量</th>
+													<th class="num">小計</th>
+												</tr>
+											</thead>
+											<tbody>
+												<tr th:each="item : ${order.ordersDetails}">
+													<td th:text="${item.meal.mealName}">品項名稱</td>
+													<td class="num" th:text="|× ${item.odMealNum}|">× 1</td>
+													<td class="num"
+														th:text="'$' + ${item.odDiscountPrice * item.odMealNum}">$100</td>
+												</tr>
+											</tbody>
+										</table>
+										<!-- <p class="order-total" th:text="'合計　$' + ${order.total}">合計　$100</p> -->
+									</div>
+								</div>
+							</div>
 
-            <!--   日期要顯示成「2026年09月20日」的話，可以用 #temporals.format(order.date, 'yyyy年MM月dd日')
+							<!--   日期要顯示成「2026年09月20日」的話，可以用 #temporals.format(order.date, 'yyyy年MM月dd日')
               （欄位是 LocalDate / LocalDateTime 時）或 #dates.format(...)（欄位是 java.util.Date 時）。
               合計 order.total 請在 Java 那邊算好。
 
               注意：這個對話框每個頁面都會放，所以「每個頁面的 Controller」都要把 orders 等清單放進 Model。
               不想每個 Controller 都寫一次的話，可以另外寫一個加了 @ControllerAdvice 的類別，
               裡面用 @ModelAttribute("orders") 的方法回傳清單，所有頁面就都會有。 -->
-            
-						<!-- 假資料 -->	<!-- <div class="record-list" id="ordersList"></div> -->
+
+							<!-- 假資料 -->
+							<!-- <div class="record-list" id="ordersList"></div> -->
 						</section>
 
 						<!-- ---------- 預約紀錄（內容由 member.js 產生） ---------- -->
@@ -614,100 +635,32 @@
 
 							<h3 class="panel-title">預約紀錄</h3>
 
-							<p class="form-msg error" role="alert"
-								th:if="${reservationError != null}"
-								th:text="${reservationError}"></p>
-
 							<div class="sub-tabs">
-								<button type="button" class="active" data-resv-tab="current">
-									當前訂位</button>
+								<button type="button" class="active" data-resv-tab="current"
+									aria-pressed="true">當前訂位</button>
 
-								<button type="button" data-resv-tab="history">歷史訂位</button>
+								<button type="button" data-resv-tab="history"
+									aria-pressed="false">歷史訂位</button>
 							</div>
 
-							<div class="record-list" id="resvList">
-								<div
-									th:each="group : ${#strings.arraySplit('current,history', ',')}"
-									th:id="${group == 'current' ? 'resvCurrent' : 'resvHistory'}"
-									th:attr="hidden=${group == 'history' ? 'hidden' : null}"
-									th:with="items=${group == 'current'
-                 ? currentResvs : historyResvs}">
+							<div id="resvVerifyNotice" class="member-reservation-notice"
+								hidden>
+								<span>會員電話驗證後才可編輯當前預約</span>
 
-									<p class="empty-text" th:if="${#lists.isEmpty(items)}"
-										th:text="${group == 'current'
-                   ? '目前沒有進行中的訂位'
-                   : '目前沒有歷史訂位'}"></p>
+								<button type="button" class="btn-small"
+									data-member-tab="profile">前往電話驗證</button>
+							</div>
 
-									<div class="record-item" th:each="r : ${items}">
-										<div class="record-head">
-											<span class="record-info"> <span
-												th:text="${#temporals.format(
-                            r.rsvDt.rsvDtDatetime, 'yyyy年MM月dd日')}">
-											</span> <span
-												th:text="${#temporals.format(
-                            r.rsvDt.rsvDtDatetime, 'HH:mm')}">
-											</span> <span th:text="|${r.seatType.seatTypeNo} 人桌|"> </span>
-											</span>
+							<p id="resvMessage" class="empty-text" role="status"
+								aria-live="polite" hidden></p>
 
-											<div class="record-actions">
-												<button type="button" class="btn-small" data-toggle-record
-													aria-expanded="false">訂位明細</button>
+							<div class="record-list" id="resvList"
+								th:attr="data-api-url=@{/bistroops/reservation/mine},
+                  data-edit-url=@{/bistroops/reservation/edit},
+                  data-cancel-url=@{/bistroops/reservation/cancel}">
 
-												<form th:if="${group == 'current'}"
-													th:action="@{/member/reservation/cancel}" method="post"
-													data-reservation-cancel>
-
-													<input type="hidden" name="rsvNo" th:value="${r.rsvNo}">
-
-													<input type="hidden" name="reservationCsrfToken"
-														th:value="${reservationCsrfToken}">
-
-													<button type="submit" class="btn-small danger">
-														取消訂位</button>
-												</form>
-											</div>
-										</div>
-
-										<div class="record-body" hidden>
-											<p th:text="|訂位編號：${r.rsvNo}|"></p>
-
-											<p>
-												用餐時間： <span
-													th:text="${#temporals.format(
-                            r.rsvDt.rsvDtDatetime, 'yyyy/MM/dd HH:mm')}">
-												</span>
-											</p>
-
-											<p th:text="|桌型：${r.seatType.seatTypeNo} 人桌|"></p>
-
-											<p th:text="|狀態：${r.rsvStatus}|"></p>
-
-											<p>
-												備註： <span style="white-space: pre-wrap;"
-													th:text="${#strings.isEmpty(r.rsvComment)
-                                  ? '無' : r.rsvComment}"></span>
-											</p>
-
-											<form th:if="${group == 'current'}"
-												th:action="@{/member/reservation/comment}" method="post">
-
-												<input type="hidden" name="rsvNo" th:value="${r.rsvNo}">
-
-												<input type="hidden" name="reservationCsrfToken"
-													th:value="${reservationCsrfToken}"> <label
-													th:for="|memberRsvNote-${r.rsvNo}|"> 修改備註（最多 50
-													個字元） </label>
-
-												<textarea th:id="|memberRsvNote-${r.rsvNo}|"
-													name="rsvComment" rows="3" maxlength="50"
-													style="display: block; width: 100%; margin: 8px 0; padding: 10px; font: inherit;"
-													th:text="${r.rsvComment}"></textarea>
-
-												<button type="submit" class="btn-small">儲存備註</button>
-											</form>
-										</div>
-									</div>
-								</div>
+								<div id="resvCurrent"></div>
+								<div id="resvHistory" hidden></div>
 							</div>
 						</section>
 
@@ -740,6 +693,101 @@
 
 		<!-- 操作結果的小提示（例如「修改成功」） -->
 		<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+		<script>
+(() => {
+    function initializeDefaultPasswordHint() {
+        const phoneInput = document.getElementById('loginPhone');
+        const hint = document.getElementById('loginDefaultPasswordHint');
+
+        if (!phoneInput || !hint || phoneInput.dataset.hintInitialized) {
+            return;
+        }
+
+        phoneInput.dataset.hintInitialized = 'true';
+
+        let timer;
+        let requestController;
+        let revision = 0;
+
+        function scheduleCheck() {
+            clearTimeout(timer);
+            requestController?.abort();
+
+            const currentRevision = ++revision;
+            const phone = phoneInput.value.trim();
+
+            hint.hidden = true;
+
+            if (!/^09[0-9]{8}$/.test(phone)) {
+                return;
+            }
+
+            timer = setTimeout(async () => {
+                requestController = new AbortController();
+
+                try {
+                    const url = new URL(
+                        hint.dataset.checkUrl,
+                        window.location.href
+                    );
+
+                    url.searchParams.set('phone', phone);
+
+                    const response = await fetch(url, {
+                        signal: requestController.signal,
+                        credentials: 'same-origin',
+                        cache: 'no-store',
+                        headers: {
+                            'Accept': 'application/json'
+                        }
+                    });
+
+                    if (!response.ok) {
+                        return;
+                    }
+
+                    const result = await response.json();
+
+                    // 避免較早的查詢結果顯示在另一支電話下方
+                    if (revision === currentRevision
+                            && phoneInput.value.trim() === phone) {
+                        hint.hidden = result.showHint !== true;
+                    }
+                } catch (error) {
+                    if (revision === currentRevision) {
+                        hint.hidden = true;
+                    }
+                }
+            }, 600);
+        }
+
+        phoneInput.addEventListener('input', scheduleCheck);
+        phoneInput.addEventListener('change', scheduleCheck);
+        phoneInput.addEventListener('focus', scheduleCheck);
+
+        phoneInput.form?.addEventListener('reset', () => {
+            clearTimeout(timer);
+            requestController?.abort();
+            revision++;
+            hint.hidden = true;
+        });
+
+        scheduleCheck();
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener(
+            'DOMContentLoaded',
+            initializeDefaultPasswordHint,
+            { once: true }
+        );
+    } else {
+        initializeDefaultPasswordHint();
+    }
+})();
+</script>
+
 
 	</div>
 
