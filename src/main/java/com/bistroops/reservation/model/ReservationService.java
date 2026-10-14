@@ -1,11 +1,13 @@
 package com.bistroops.reservation.model;
 
 import java.time.LocalDate;
+import com.bistroops.member.model.MemberService;
 import com.bistroops.reservationdatetime.model.ReservationSlotWindowService;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Set;
+import java.time.format.DateTimeFormatter;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
@@ -36,16 +38,18 @@ public class ReservationService {
 	private final SeatTypeRepository seatTypeRepository;
 	private final ReservationSlotWindowService slotWindowService;
 	private static final ZoneId RESERVATION_ZONE = ZoneId.of("Asia/Taipei");
+	private final MemberService memberService;
 
 	public ReservationService(ReservationRepository repository, MemberRepository memberRepository,
 			ReservationDatetimeRepository rsvDtRepository, SeatTypeRepository seatTypeRepository,
-			ReservationSlotWindowService slotWindowService) {
+			ReservationSlotWindowService slotWindowService, MemberService memberService) {
 
 		this.repository = repository;
 		this.memberRepository = memberRepository;
 		this.rsvDtRepository = rsvDtRepository;
 		this.seatTypeRepository = seatTypeRepository;
 		this.slotWindowService = slotWindowService;
+		this.memberService = memberService;
 	}
 
 	public List<ReservationVO> getAll() {
@@ -463,23 +467,11 @@ public class ReservationService {
 
 	// 員工代會員新增訂位。
 	// 會員以電話查找，不要求客人在前台登入。
+	// 員工代客訂位，也可使用尚未建立會員的電話。
 	@Transactional(isolation = Isolation.READ_COMMITTED)
 	public ReservationVO addByStaff(String phone, LocalDate date, Long rsvDtNo, Integer seatTypeNo, String comment) {
 
-		String normalizedPhone = phone == null ? "" : phone.trim();
-
-		if (!normalizedPhone.matches("09[0-9]{8}")) {
-			throw new IllegalArgumentException("請輸入09開頭的10碼手機號碼");
-		}
-
-		MemberVO member = memberRepository.findByMemTel(normalizedPhone);
-
-		if (member == null) {
-			throw new IllegalArgumentException("此電話尚未建立會員資料，目前無法新增訂位");
-		}
-
-		// 沿用前台新增的日期、時段、名額與重複訂位檢查。
-		return addForMember(member.getMemNo(), date, rsvDtNo, seatTypeNo, comment);
+		return addByPhone(phone, date, rsvDtNo, seatTypeNo, comment);
 	}
 
 	// 開啟訂位頁時，補齊含今日90天的時段，
@@ -532,6 +524,272 @@ public class ReservationService {
 				"serverTime", now.atZone(RESERVATION_ZONE).toInstant().toEpochMilli(),
 
 				"slotsByDate", slotsByDate);
+	}
+
+	// 免登入訂位：以電話取得或建立未驗證會員。
+	// 不會自動登入，也不會修改既有會員資料。
+	@Transactional(isolation = Isolation.READ_COMMITTED)
+	public ReservationVO addByPhone(String phone, LocalDate date, Long rsvDtNo, Integer seatTypeNo, String comment) {
+
+		String normalizedPhone = normalizeBookingPhone(phone);
+
+		if (date == null || rsvDtNo == null) {
+			throw new IllegalArgumentException("請選擇日期與時段");
+		}
+
+		LocalDate today = LocalDate.now(RESERVATION_ZONE);
+
+		if (date.isBefore(today) || date.isAfter(today.plusDays(89))) {
+
+			throw new IllegalArgumentException("只能預約含今日起算90天內的日期");
+		}
+
+		if (seatTypeNo == null || !Set.of(2, 4, 6).contains(seatTypeNo)) {
+
+			throw new IllegalArgumentException("請選擇2、4或6人桌");
+		}
+
+		String normalizedComment = normalizeComment(comment);
+
+		MemberVO member = memberService.getOrCreateUnverifiedMemberForReservation(normalizedPhone);
+
+		// 沿用已完成的時段鎖定、日期核對、
+		// 重複訂位及剩餘桌數檢查。
+		return addForMember(member.getMemNo(), date, rsvDtNo, seatTypeNo, normalizedComment);
+	}
+
+	// 前後台共用電話格式檢查。
+	private String normalizeBookingPhone(String phone) {
+
+		String value = phone == null ? "" : phone.trim();
+
+		if (!value.matches("09[0-9]{8}")) {
+			throw new IllegalArgumentException("請輸入09開頭的10碼手機號碼");
+		}
+
+		return value;
+	}
+
+	// 公開電話查詢只提供必要訂位資訊。
+	// 不包含會員姓名、Email、備註或密碼。
+	public List<Map<String, Object>> lookupByPhone(String phone) {
+
+		String normalizedPhone = normalizeBookingPhone(phone);
+
+		LocalDateTime fromTime = LocalDate.now(RESERVATION_ZONE).atStartOfDay();
+
+		return repository.findUpcomingByPhone(normalizedPhone, fromTime).stream().map(reservation -> {
+
+			LocalDateTime diningTime = reservation.getRsvDt().getRsvDtDatetime();
+
+			return Map.<String, Object>of("reservationNo", reservation.getRsvNo(),
+
+					"dateText", diningTime.toLocalDate().toString().replace('-', '/'),
+
+					"timeText", diningTime.format(DateTimeFormatter.ofPattern("HH:mm")),
+
+					"tableType", reservation.getSeatType().getSeatTypeNo(),
+
+					"status", reservation.getRsvStatus() == null ? "未記錄" : reservation.getRsvStatus());
+		}).toList();
+	}
+
+	// 僅供已確認本瀏覽器訂位權限的 Controller 呼叫。
+	// 不回傳會員姓名、Email 或密碼。
+	public Map<String, Object> getResultForBooking(Long rsvNo) {
+
+		checkReservationNo(rsvNo);
+
+		ReservationVO reservation = repository.findById(rsvNo)
+				.orElseThrow(() -> new IllegalArgumentException("找不到訂位紀錄"));
+
+		LocalDateTime diningTime = reservation.getRsvDt().getRsvDtDatetime();
+
+		return Map.<String, Object>of("reservationNo", reservation.getRsvNo(),
+
+				"dateText", diningTime.toLocalDate().toString().replace('-', '/'),
+
+				"timeText", diningTime.format(DateTimeFormatter.ofPattern("HH:mm")),
+
+				"tableType", reservation.getSeatType().getSeatTypeNo(),
+
+				"bookingName", reservation.getRsvName() == null ? "" : reservation.getRsvName(),
+
+				"phone", reservation.getMember().getMemTel(),
+
+				"note", reservation.getRsvComment() == null ? "" : reservation.getRsvComment(),
+
+				"status", reservation.getRsvStatus() == null ? "未記錄" : reservation.getRsvStatus());
+	}
+
+	@Transactional(isolation = Isolation.READ_COMMITTED)
+	public ReservationVO addByPhone(String phone, String bookingName, LocalDate date, Long rsvDtNo, Integer seatTypeNo,
+			String comment) {
+
+		String normalizedName = bookingName == null ? "" : bookingName.trim();
+
+		if (normalizedName.codePointCount(0, normalizedName.length()) > 30) {
+			throw new IllegalArgumentException("聯絡姓名最多30個字元");
+		}
+
+		// 沿用原本的電話、日期、桌數及重複訂位檢查。
+		ReservationVO reservation = addByPhone(phone, date, rsvDtNo, seatTypeNo, comment);
+
+		// 此處只修改訂位資料，不修改會員資料。
+		reservation.setRsvName(normalizedName.isEmpty() ? null : normalizedName);
+
+		return repository.save(reservation);
+	}
+
+	public Map<String, List<Map<String, Object>>> getMemberReservationSnapshot(Integer memNo) {
+
+		Map<String, List<ReservationVO>> groups = getMemberReservationGroups(memNo);
+
+		return Map.of("current", groups.get("current").stream().map(this::toMemberReservationData).toList(),
+
+				"history", groups.get("history").stream().map(this::toMemberReservationData).toList());
+	}
+
+	private Map<String, Object> toMemberReservationData(ReservationVO reservation) {
+
+		LocalDateTime diningTime = reservation.getRsvDt().getRsvDtDatetime();
+
+		Map<String, Object> result = new LinkedHashMap<>();
+
+		result.put("reservationNo", reservation.getRsvNo());
+
+		result.put("dateText", diningTime.format(DateTimeFormatter.ofPattern("yyyy/MM/dd")));
+
+		result.put("timeText", diningTime.format(DateTimeFormatter.ofPattern("HH:mm")));
+
+		result.put("tableType", reservation.getSeatType().getSeatTypeNo());
+
+		result.put("bookingName", reservation.getRsvName() == null ? "" : reservation.getRsvName());
+
+		result.put("status", reservation.getRsvStatus() == null ? "" : reservation.getRsvStatus());
+
+		result.put("note", reservation.getRsvComment() == null ? "" : reservation.getRsvComment());
+
+		return result;
+	}
+
+	// 編輯訂位：保留原編號，在同一個交易內更新日期、桌型與聯絡資料。
+	@Transactional(isolation = Isolation.READ_COMMITTED)
+	public void editForMember(Long rsvNo, Integer memNo, LocalDate date, Long rsvDtNo, Integer tableType,
+			String bookingName, String note) {
+
+		MemberVO member = memberRepository.findById(memNo).orElseThrow(() -> new IllegalArgumentException("會員不存在"));
+
+		if (!"已驗證".equals(member.getMemStatus())) {
+			throw new IllegalArgumentException("請先完成電話驗證");
+		}
+
+		ReservationVO reservation = getOwnedReservationForUpdate(rsvNo, memNo);
+
+		requireFutureReservation(reservation);
+
+		LocalDateTime now = LocalDateTime.now(RESERVATION_ZONE);
+		LocalDate today = now.toLocalDate();
+
+		if (date == null || date.isBefore(today) || date.isAfter(today.plusDays(89))) {
+			throw new IllegalArgumentException("只能預約含今日起算90天內的日期");
+		}
+
+		if (rsvDtNo == null) {
+			throw new IllegalArgumentException("請選擇用餐時段");
+		}
+
+		if (tableType == null || !Set.of(2, 4, 6).contains(tableType)) {
+			throw new IllegalArgumentException("請選擇2、4或6人桌");
+		}
+
+		String name = bookingName == null ? "" : bookingName.trim();
+
+		if (name.codePointCount(0, name.length()) > 30) {
+			throw new IllegalArgumentException("聯絡姓名最多30個字元");
+		}
+
+		String comment = normalizeComment(note);
+
+		Long originalSlotNo = reservation.getRsvDt().getRsvDtNo();
+		Integer originalTableType = reservation.getSeatType().getSeatTypeNo();
+
+		// 依固定順序鎖定原時段及新時段。
+		Long firstSlotNo = Math.min(originalSlotNo, rsvDtNo);
+		Long secondSlotNo = Math.max(originalSlotNo, rsvDtNo);
+
+		ReservationDatetimeVO firstSlot = rsvDtRepository.findByIdForUpdate(firstSlotNo)
+				.orElseThrow(() -> new IllegalArgumentException("訂位時段不存在"));
+
+		ReservationDatetimeVO secondSlot = firstSlot;
+
+		if (!firstSlotNo.equals(secondSlotNo)) {
+			secondSlot = rsvDtRepository.findByIdForUpdate(secondSlotNo)
+					.orElseThrow(() -> new IllegalArgumentException("訂位時段不存在"));
+		}
+
+		ReservationDatetimeVO targetSlot = rsvDtNo.equals(firstSlotNo) ? firstSlot : secondSlot;
+
+		LocalDateTime targetTime = targetSlot.getRsvDtDatetime();
+
+		if (targetTime == null || !date.equals(targetTime.toLocalDate())) {
+			throw new IllegalArgumentException("日期與時段不一致");
+		}
+
+		Set<LocalTime> allowedTimes = Set.of(LocalTime.of(11, 0), LocalTime.of(12, 30), LocalTime.of(17, 0),
+				LocalTime.of(18, 30));
+
+		if (!allowedTimes.contains(targetTime.toLocalTime())) {
+			throw new IllegalArgumentException("此時段未開放訂位");
+		}
+
+		// 再次確認時間，避免等待鎖定期間已到用餐時間。
+		now = LocalDateTime.now(RESERVATION_ZONE);
+
+		if (!reservation.getRsvDt().getRsvDtDatetime().isAfter(now) || !targetTime.isAfter(now)) {
+			throw new IllegalArgumentException("已到用餐時間，請聯絡餐廳處理");
+		}
+
+		SeatTypeVO targetTable = seatTypeRepository.findById(tableType)
+				.orElseThrow(() -> new IllegalArgumentException("桌型不存在"));
+
+		Integer onlineLimit = targetTable.getSeatTypeRsvNum();
+		Integer physicalLimit = targetTable.getSeatTypeNum();
+
+		if (onlineLimit == null || physicalLimit == null || onlineLimit <= 0 || physicalLimit <= 0) {
+			throw new IllegalArgumentException("此桌型未開放網路訂位");
+		}
+
+		// 排除正在編輯的這筆訂位，檢查同會員同時段重複訂位。
+		long duplicates = repository.countActiveByMemberAndTime(memNo, rsvDtNo);
+
+		if (originalSlotNo.equals(rsvDtNo)) {
+			duplicates--;
+		}
+
+		if (duplicates > 0) {
+			throw new IllegalArgumentException("你在這個時段已有其他訂位");
+		}
+
+		long usedTables = repository.countActiveByTimeAndSeatType(rsvDtNo, tableType);
+
+		// 原時段、原桌型本身占用的一桌不計入競爭名額。
+		if (originalSlotNo.equals(rsvDtNo) && originalTableType.equals(tableType)) {
+			usedTables--;
+		}
+
+		int capacity = Math.min(onlineLimit, physicalLimit);
+
+		if (usedTables >= capacity) {
+			throw new IllegalArgumentException("所選時段已額滿，原訂位仍保留，請選擇其他時段");
+		}
+
+		reservation.setRsvDt(targetSlot);
+		reservation.setSeatType(targetTable);
+		reservation.setRsvName(name.isEmpty() ? null : name);
+		reservation.setRsvComment(comment);
+
+		repository.save(reservation);
 	}
 
 }
