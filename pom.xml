@@ -148,6 +148,10 @@
 			<!-- <version>2.2.0</version> -->
 			<scope>provided</scope>                  <!-- ※provided只提供編譯，jar檔不匯出 -->
 		</dependency>
+		<dependency>
+		    <groupId>org.springframework.boot</groupId>
+    		<artifactId>spring-boot-starter-websocket</artifactId>
+		</dependency>
 
 		<!-- javax.json -->                          <!-- spring-boot 未內建依賴 -->
 		<dependency>
@@ -274,10 +278,10 @@
         
         <!-- ●●●Spring Security-->  
         <!-- ●●●沒用到時請勿下載-->
-<!--        <dependency>-->
-<!--            <groupId>org.springframework.boot</groupId>-->
-<!--            <artifactId>spring-boot-starter-security</artifactId>-->
-<!--        </dependency>-->
+     	<dependency>
+           <groupId>org.springframework.boot</groupId>
+           <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
         
         <!-- ●●●thymeleaf Spring Security--> 
         <!-- ●●●與前面配合使用，沒用到時不用下載-->
@@ -286,7 +290,12 @@
 <!--            <groupId>org.thymeleaf.extras</groupId>-->
 <!--            <artifactId>thymeleaf-extras-springsecurity6</artifactId>-->
 <!--        </dependency>-->
-
+<!-- QR Code 產生器 -->
+		<dependency>
+		    <groupId>com.google.zxing</groupId>
+		    <artifactId>core</artifactId>
+		    <version>3.5.4</version>
+		</dependency>
 	</dependencies>
 
 	<build>
