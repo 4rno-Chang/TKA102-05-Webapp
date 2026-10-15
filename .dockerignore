@@ -11,3 +11,6 @@ target/
 .classpath
 pom-*.xml
 .env
+# 本機設定檔（含資料庫密碼），不能包進 image；Docker 改用 application-docker.properties
+src/main/resources/application.properties
+src/main/resources/hibernate.cfg.xml

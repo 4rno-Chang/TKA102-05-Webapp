@@ -7,8 +7,12 @@ services:
       MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:?請在 .env 設定 DB_PASSWORD}
     ports:
       - "${MYSQL_PORT:-13306}:3306"
+    # 中文用 utf8mb4，避免亂碼
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     volumes:
       - ./mysql_data:/var/lib/mysql
+      # 第一次建立資料庫（mysql_data 是空的）時，自動執行建表＋測試資料；之後不會再執行
+      - ./src/main/java/資料庫表格建立/createTable_v1_6.sql:/docker-entrypoint-initdb.d/01-createTable.sql:ro
 
   redis:
     image: redis:7
@@ -43,6 +47,7 @@ services:
       DB_PORT: 3306
       DB_USERNAME: ${DB_USERNAME:?請在 .env 設定 DB_USERNAME}
       DB_PASSWORD: ${DB_PASSWORD:?請在 .env 設定 DB_PASSWORD}
+      REDIS_HOST: redis
     depends_on:
       - mysql
       - redis
