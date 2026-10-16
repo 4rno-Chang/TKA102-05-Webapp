@@ -1,4 +1,4 @@
-package com.bistroops.frontorder.model;
+package com.bistroops.meal.model;
 
 import com.bistroops.promote.model.PromoPriceDTO;
 

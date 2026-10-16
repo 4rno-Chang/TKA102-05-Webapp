@@ -1,4 +1,4 @@
-package com.bistroops.frontorder.model;
+package com.bistroops.meal.model;
 
 import java.util.ArrayList;
 import java.util.List;

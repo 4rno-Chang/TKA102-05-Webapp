@@ -114,38 +114,6 @@
 						<button type="button" class="link-btn" data-auth-view="forgot">忘記密碼？</button>
 						<button type="button" class="link-btn" data-auth-view="register">註冊會員</button>
 					</div>
-
-					<p class="divider">
-						<span>快速登入</span>
-					</p>
-
-					<div class="social-list">
-						<button type="button" class="btn-social" data-social="line">
-							<svg viewBox="0 0 24 24" aria-hidden="true">
-								<rect width="24" height="24" rx="6" fill="#06C755" />
-								<text x="12" y="15.5" text-anchor="middle" font-size="7.5"
-									font-weight="700" font-family="Arial, sans-serif" fill="#fff">LINE</text></svg>
-							<span>LINE 登入</span>
-						</button>
-						<button type="button" class="btn-social" data-social="google">
-							<svg viewBox="0 0 48 48" aria-hidden="true">
-								<path fill="#EA4335"
-									d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
-								<path fill="#4285F4"
-									d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
-								<path fill="#FBBC05"
-									d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
-								<path fill="#34A853"
-									d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" /></svg>
-							<span>Google 登入</span>
-						</button>
-						<button type="button" class="btn-social" data-social="x">
-							<svg viewBox="0 0 24 24" aria-hidden="true">
-								<path fill="currentColor"
-									d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
-							<span>X 登入</span>
-						</button>
-					</div>
 				</section>
 
 				<!-- ---------- 畫面：會員註冊 ---------- -->
@@ -368,9 +336,6 @@
 						<button type="button" data-member-tab="reservations"
 							th:disabled="${member == null}">預約紀錄</button>
 
-						<button type="button" data-member-tab="coupons"
-							th:disabled="${member == null or member.memStatus != '已驗證'}">優惠券</button>
-
 						<button type="button" data-logout>登出</button>
 
 					</nav>
@@ -583,7 +548,12 @@
 							<div class="record-list" id="ordersList">
 								<p class="empty-text" th:if="${#lists.isEmpty(orders)}">目前沒有訂單紀錄</p>
 
-								<div class="record-item" th:each="order : ${orders}">
+								<div class="record-item" th:each="order : ${orders}"
+									th:with="fb=${feedbackMap == null ? null : feedbackMap.get(order.orders)},
+									        canWrite=${@feedbackService.isWritable(order)},
+									        deadline=${#temporals.format(@feedbackService.writeDeadline(order), 'yyyy/MM/dd HH:mm')}">
+									<!-- 按鈕裡面不能再放按鈕，所以用 record-row 把「展開明細」和「填寫回饋」兩顆按鈕並排 -->
+									<div class="record-row">
 									<button type="button" class="record-head" data-toggle-record
 										aria-expanded="false">
 										<span class="record-info"> <span
@@ -595,6 +565,27 @@
 											class="num" th:text=" '$' + ${order.ordersActualPrice}">$100</span>
 										</span> <span class="record-icon">+</span>
 									</button>
+									<!-- 回饋按鈕：用餐後 7 天內可以填寫，也可以修改；超過 7 天就不能再動
+									     fb       這張訂單的回饋，沒回饋過是 null（MemberOrdersController 的 feedbackMap）
+									     canWrite 現在是否還在用餐後 7 天內（FeedbackService 的 isWritable；天數是 FeedbackVO.FEEDBACK_DAYS）
+									     7 天內：沒回饋過 → 填寫回饋；回饋過 → 編輯回饋（帶入原本的評分和內容）
+									     超過 7 天：沒回饋過 → 回饋已截止；回饋過 → 已回饋
+									     「填寫」和「編輯」點了都會打開下面的 feedbackModal（member.js 的「歷史訂單：填寫回饋」） -->
+									<button type="button" class="btn-small btn-feedback" data-feedback-open
+										th:if="${canWrite and fb == null}"
+										th:data-orders="${order.orders}"
+										th:data-order-label="${#numbers.formatInteger(order.orders,8)}"
+										th:data-deadline="${deadline}">填寫回饋</button>
+									<button type="button" class="btn-small btn-feedback" data-feedback-open
+										th:if="${canWrite and fb != null}"
+										th:data-orders="${order.orders}"
+										th:data-order-label="${#numbers.formatInteger(order.orders,8)}"
+										th:data-deadline="${deadline}"
+										th:data-rating="${fb.feeRating}"
+										th:data-content="${fb.feeContent}">編輯回饋</button>
+									<span class="btn-small btn-feedback is-done"
+										th:if="${!canWrite}" th:text="${fb == null} ? '回饋已截止' : '已回饋'">已回饋</span>
+									</div>
 									<div class="record-body" hidden>
 										<table class="order-table">
 											<thead>
@@ -664,29 +655,60 @@
 							</div>
 						</section>
 
-						<!-- ---------- 優惠券（內容由 member.js 產生） ---------- -->
-						<section class="member-panel" data-panel="coupons" hidden>
-							<h3 class="panel-title">優惠券</h3>
-							<!-- 【Thymeleaf 串接】優惠券
-              Controller 把優惠券清單放進 Model（名稱 coupons）。把下面那行 div 換成：
-
-                <div class="coupon-list" id="couponList">
-                  <p class="empty-text" th:if="${#lists.isEmpty(coupons)}">目前沒有優惠券</p>
-
-                  <div class="coupon" th:each="coupon : ${coupons}" th:classappend="${coupon.used} ? 'used'">
-                    <h4 th:text="${coupon.title}">優惠券名稱</h4>
-                    <p th:text="${coupon.desc}">優惠券說明</p>
-                    <p class="coupon-expire" th:text="${coupon.used} ? '已使用' : |使用期限：${coupon.expire}|">使用期限：</p>
-                  </div>
-                </div>
-
-              th:classappend 的意思是：已使用的優惠券多加一個 used 的 class（畫面會變灰）。
-            -->
-							<div class="coupon-list" id="couponList"></div>
-						</section>
-
 					</div>
 				</div>
+			</div>
+		</div>
+
+
+		<!-- =====================================================
+       對話框 3：填寫回饋（從歷史訂單的「填寫回饋」打開，會疊在會員中心上面）
+       送到 FrontFeedbackController 的 /bistroops/feedback/add；
+       回饋人、電話由 Java 從登入的會員帶入，用餐時間用訂單的下單時間
+       ===================================================== -->
+		<div class="modal" id="feedbackModal" hidden>
+			<div class="modal-backdrop" data-close-modal></div>
+
+			<div class="modal-dialog modal-dialog-feedback" role="dialog"
+				aria-modal="true" aria-labelledby="feedbackTitle" tabindex="-1">
+				<button type="button" class="modal-close" data-close-modal
+					aria-label="關閉">×</button>
+
+				<h2 class="modal-title" id="feedbackTitle">填寫回饋</h2>
+				<p class="feedback-order">訂單編號：<span id="feedbackOrderLabel"></span></p>
+				<!-- 填寫時顯示「請在…前填寫」，編輯時顯示「可以修改到…」 -->
+				<p class="feedback-deadline" id="feedbackDeadline" hidden></p>
+
+				<form id="feedbackForm" th:action="@{/bistroops/feedback/add}"
+					method="post" novalidate>
+					<input type="hidden" id="feedbackOrders" name="orders">
+					<input type="hidden" id="feedbackReturnUrl" name="returnUrl">
+
+					<div class="field">
+						<span class="field-label">評分</span>
+						<!-- 由 5 排到 1，搭配 CSS 的 row-reverse，滑過某顆星時它左邊的星也會亮 -->
+						<div class="star-rating">
+							<input type="radio" id="feedbackStar5" name="rating" value="5"><label for="feedbackStar5" title="5 星">★</label>
+							<input type="radio" id="feedbackStar4" name="rating" value="4"><label for="feedbackStar4" title="4 星">★</label>
+							<input type="radio" id="feedbackStar3" name="rating" value="3"><label for="feedbackStar3" title="3 星">★</label>
+							<input type="radio" id="feedbackStar2" name="rating" value="2"><label for="feedbackStar2" title="2 星">★</label>
+							<input type="radio" id="feedbackStar1" name="rating" value="1"><label for="feedbackStar1" title="1 星">★</label>
+						</div>
+					</div>
+
+					<div class="field">
+						<label for="feedbackContent">回饋內容</label>
+						<textarea id="feedbackContent" name="content" rows="5" maxlength="500"
+							placeholder="告訴我們這次用餐的感想"></textarea>
+						<p class="feedback-count"><span id="feedbackCount">0</span> / 500</p>
+					</div>
+
+					<p class="form-msg error" id="feedbackError" hidden></p>
+
+					<div class="form-actions">
+						<button type="submit" class="btn-solid" id="feedbackSubmit">送出回饋</button>
+					</div>
+				</form>
 			</div>
 		</div>
 
