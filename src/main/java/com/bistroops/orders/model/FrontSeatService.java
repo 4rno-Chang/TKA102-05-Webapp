@@ -1,4 +1,4 @@
-package com.bistroops.frontorder.model;
+package com.bistroops.orders.model;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -7,7 +7,6 @@ import java.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.bistroops.orders.model.OrdersService;
 import com.bistroops.seat.model.SeatVO;
 import com.bistroops.seattype.model.SeatingSeatService;
 
