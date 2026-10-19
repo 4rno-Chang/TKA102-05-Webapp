@@ -1,4 +1,22 @@
 /* 員工管理 */
+.employee-delivery-status {
+    padding: 12px 16px;
+    margin: 0 0 16px;
+    border: 1px solid #a52a2a;
+    border-radius: 8px;
+    background: #fff1ef;
+    color: #a52a2a;
+    line-height: 1.6;
+}
+
+.employee-delivery-status[hidden] { display: none; }
+
+.employee-form-group small {
+    display: block;
+    margin-top: 6px;
+    color: #666;
+    line-height: 1.5;
+}
 .employee-list-header {
 	display: flex;
 	justify-content: space-between;
@@ -73,6 +91,8 @@
 	margin-bottom: 16px;
 }
 
+.employee-form-group[hidden] { display: none; }
+
 .employee-form-group input {
 	padding: 10px;
 	border: 1px solid #ddd;
@@ -94,12 +114,35 @@
 	margin-top: 24px;
 }
 
+#resetEmployeePasswordBtn {
+	margin-right: auto;
+}
+
+#resetEmployeePasswordBtn[hidden] {
+	display: none;
+}
+
 /* ===== 員工權限勾選清單 ===== */
-#employeePermissionList {
+#employeePermissionList, #employeeInitialPermissionList {
 	display: grid;
 	grid-template-columns: repeat(2, minmax(0, 1fr));
 	gap: 12px;
 	margin: 20px 0;
+}
+
+#employeeInitialPermissions {
+    border: 0;
+    padding: 0;
+    margin: 0;
+    min-width: 0;
+}
+#employeeInitialPermissions[hidden] { display: none; }
+#employeeInitialPermissions legend { padding: 0; }
+#employeeInitialPermissions .employee-permission-item { margin: 0; }
+#employeeInitialPermissionHint { font-size: 13px; color: #666; }
+#employeeInitialPermissionError { color: #a52a2a; font-size: 14px; }
+#employeeInitialPermissions[aria-invalid="true"] .employee-permission-item {
+    border-color: #a52a2a;
 }
 
 .employee-permission-item {
@@ -120,7 +163,7 @@
 }
 
 @media ( max-width : 600px) {
-	#employeePermissionList {
+	#employeePermissionList, #employeeInitialPermissionList {
 		grid-template-columns: 1fr;
 	}
 }

@@ -6,11 +6,16 @@
 
 <title>Bistroops｜當日候位</title>
 
+<link rel="icon" th:href="@{/images/logo-mark.svg}" type="image/svg+xml">
+
 <link rel="stylesheet" th:href="@{/css/front/front.css}">
 <link rel="stylesheet" th:href="@{/css/front/member.css}">
 <link rel="stylesheet" th:href="@{/css/front/waiting.css}">
+<link rel="stylesheet" th:href="@{/css/front/booking-loading.css}">
 
 <script th:src="@{/js/front/member.js}" defer></script>
+<script th:src="@{/js/front/announcement.js}" defer></script>
+<script th:src="@{/js/front/booking-loading.js}" defer></script>
 <script th:src="@{/js/front/waiting.js}" defer></script>
 </head>
 
@@ -35,8 +40,56 @@
 
 			<p class="form-msg" th:if="${message != null}" th:text="${message}">
 			</p>
+			
+			<!-- 電話查詢：說明下方、候位服務狀態上方 -->
+<section class="waiting-lookup"
+         aria-label="查詢當日候位"
+         th:if="${not manage}">
 
-			<section class="waiting-bar">
+    <!-- 排法和預約訂位的「查詢訂位」相同：標題在上，輸入框和按鈕同一排 -->
+    <form th:action="@{/bistroops/waiting}"
+          method="get" data-loading>
+
+        <label for="lookupPhone" class="waiting-lookup-label">候位電話</label>
+
+        <div class="waiting-lookup-row">
+            <input type="tel"
+                   id="lookupPhone"
+                   name="lookupPhone"
+                   pattern="09[0-9]{8}"
+                   minlength="10"
+                   maxlength="10"
+                   inputmode="numeric"
+                   autocomplete="tel"
+                   placeholder="請輸入候位電話"
+                   required
+                   th:value="${lookupPhone}">
+
+            <button type="submit" class="btn-outline">查詢候位號碼</button>
+        </div>
+    </form>
+
+    <div class="waiting-lookup-results"
+         th:if="${lookupPerformed}">
+
+        <p th:if="${#lists.isEmpty(lookupTickets)}">
+            查無當日候位資料。
+        </p>
+
+        <article class="record-item"
+                 th:each="t : ${lookupTickets}">
+            <p th:text="|號碼：${t.number}|"></p>
+            <p th:text="|桌型：${t.tableType} 人桌|"></p>
+            <p th:text="|狀態：${t.statusText}|"></p>
+
+            <p th:if="${t.status == 'MISSED'}">
+                請回到店門口重新掃描 QR Code 取號。
+            </p>
+        </article>
+    </div>
+</section>
+
+			<section class="waiting-bar" th:classappend="${!open} ? 'is-closed'">
 				<div>
 					<p class="waiting-bar-title"
 						th:text="${open}
@@ -72,7 +125,7 @@
 						</p>
 
 						<form th:if="${manage and open}"
-							th:action="@{/bistroops/waiting/manage/action}" method="post">
+							th:action="@{/bistroops/waiting/manage/action}" method="post" data-loading=".queue-card">
 
 							<input type="hidden" name="operation" value="NOTIFY"> <input
 								type="hidden" name="tableType" th:value="${q.tableType}">
@@ -86,33 +139,7 @@
 				</article>
 			</section>
 
-			<!-- 客人電話查詢 -->
-			<section class="booking-card" th:if="${not manage}">
-				<h2 class="booking-card-title">查詢當日候位</h2>
-
-				<form th:action="@{/bistroops/waiting}" method="get">
-					<div class="field">
-						<label for="lookupPhone">候位電話</label> <input type="tel"
-							id="lookupPhone" name="lookupPhone" pattern="09[0-9]{8}"
-							maxlength="10" inputmode="numeric" placeholder="09XXXXXXXX"
-							required th:value="${lookupPhone}">
-					</div>
-
-					<button type="submit" class="btn-outline">查詢候位</button>
-				</form>
-
-				<div th:if="${lookupPerformed}">
-					<p th:if="${#lists.isEmpty(lookupTickets)}">查無當日候位資料。</p>
-
-					<article class="record-item" th:each="t : ${lookupTickets}">
-						<p th:text="|號碼：${t.number}|"></p>
-						<p th:text="|桌型：${t.tableType} 人桌|"></p>
-						<p th:text="|狀態：${t.statusText}|"></p>
-
-						<p th:if="${t.status == 'MISSED'}">請回到店門口重新掃描 QR Code 取號。</p>
-					</article>
-				</div>
-			</section>
+			
 
 			<!-- 已登入員工的管理清單 -->
 			<section class="booking-card" th:if="${manage}">
@@ -132,7 +159,7 @@
 
 					<form th:if="${t.active}"
 						th:action="@{/bistroops/waiting/manage/action}" method="post"
-						data-confirm="確定執行所選候位操作嗎？">
+						data-confirm="確定執行所選候位操作嗎？" data-loading=".record-item">
 
 						<input type="hidden" name="tableType" th:value="${t.tableType}">
 

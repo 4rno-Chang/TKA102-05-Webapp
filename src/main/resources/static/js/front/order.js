@@ -41,7 +41,7 @@ document.addEventListener('click', e => {
   if (!stepBtn) return;
   const input = stepBtn.closest('[data-stepper]').querySelector('input[type="number"]');
   const min = Number(input.min) || 1;
-  const max = Number(input.max) || 20;
+  const max = Number(input.max) || 10;   // 每一品項最多 10 份（跟 CartRedisService.MAX_NUM 一樣）
   const current = Number(input.value) || min;
 
   input.value = Math.max(min, Math.min(max, current + Number(stepBtn.dataset.step)));
@@ -50,10 +50,45 @@ document.addEventListener('click', e => {
   if (sheet) updateItemTotal(sheet);
 });
 
-// A-3. 送出前先確認
+// A-3. 送出前先確認：表單寫了 data-confirm="要問的話"，送出前跳出自己的對話框（取代瀏覽器原本的 confirm）
+//   一定要按「取消」或「確認」才會關（按旁邊、按 Esc 都不會關）。樣式在 order.css 的「確認對話框」
+function orderConfirm(text) {
+  return new Promise(resolve => {
+    const box = document.createElement('dialog');
+    box.className = 'order-confirm';
+    box.innerHTML = `<p class="order-confirm-label">CONFIRM</p>
+      <p class="order-confirm-text"></p>
+      <div class="order-confirm-btns">
+        <button type="button" class="order-confirm-btn is-ok" value="ok">確認</button>
+        <button type="button" class="order-confirm-btn" value="no">取消</button>
+      </div>`;
+    box.querySelector('.order-confirm-text').textContent = text;   // 用 textContent，文字裡有 < > 也不會被當成 HTML
+    box.addEventListener('cancel', e => e.preventDefault());       // 按 Esc 不會關
+    box.addEventListener('click', e => {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+      box.close();
+      box.remove();
+      resolve(btn.value === 'ok');
+    });
+    document.body.append(box);
+    box.showModal();                             // 蓋在所有東西上面，後面的畫面點不到
+    box.querySelector('[value=no]').focus();     // 先停在「取消」，不小心按 Enter 不會送出
+  });
+}
+
 document.addEventListener('submit', e => {
-  const message = e.target.dataset.confirm;
-  if (message && !confirm(message)) e.preventDefault();
+  const form = e.target;
+  const message = form.dataset.confirm;
+  if (!message || form.dataset.confirmed) return;
+  e.preventDefault();             // 先不送出，等客人按按鈕
+  e.stopImmediatePropagation();   // 也先不跑下面 A-8 的「背景送出」
+  orderConfirm(message).then(ok => {
+    if (!ok) return;              // 按「取消」就不送出
+    form.dataset.confirmed = 'yes';                // 已經問過了：再送一次時不要再問
+    form.requestSubmit(e.submitter || undefined);  // 用同一顆按鈕再送一次（清空會走 A-8 的背景送出）
+    delete form.dataset.confirmed;
+  });
 });
 
 // A-4. 菜品的對話框
@@ -191,43 +226,263 @@ if (siteHeader) {
 
 // A-7. 同桌的手機購物車互通（WebSocket）
 
+// 為了防止重複下單：同桌有人正在送出訂單時（伺服器送來 cart-submitting），這支手機的購物車和菜品對話框的填寫表單先鎖住
+//   蓋上 20% 白色＋inert（booking-loading.js 的 bookingLock），並跳出提示；送完收到 cart-changed 就解開並更新購物車。
+//   伺服器那邊也會擋（FrontOrderController 檢查「送單中」的鎖），這裡是讓客人看得懂為什麼按不了。
+//   萬一沒收到 cart-changed（例如網路斷掉），12 秒後自動解開（伺服器的鎖 10 秒就會消失）。
+let tableSubmitTimer = 0;
+function tableSubmitAreas() {
+  return [document.querySelector('#dbCartSheet .order-sheet-panel'), document.querySelector('.order-item-form')].filter(Boolean);
+}
+function lockForTableSubmit() {
+  tableSubmitAreas().forEach(area => {
+    if (area.classList.contains('is-submitting')) return;   // 自己正在送單（已經鎖住）：不要動，交給自己的送單流程
+    bookingLock(null, area);
+    area.dataset.tableLock = 'yes';                          // 記住是這裡鎖的，解開時只解這些
+  });
+  showToast('同桌有人正在送出訂單，請稍候…');
+  clearTimeout(tableSubmitTimer);
+  tableSubmitTimer = setTimeout(unlockForTableSubmit, 12000);
+}
+function unlockForTableSubmit() {
+  clearTimeout(tableSubmitTimer);
+  document.querySelectorAll('[data-table-lock]').forEach(area => {
+    bookingUnlock(null, area);
+    delete area.dataset.tableLock;
+  });
+}
+
+// 在背景拿最新的點餐頁，換掉下方的購物車列、購物車和「已點餐點」（swapCartArea），再跳出提示 message
+//   換不了（例如用餐時間已經結束，頁面只剩提示）就整頁重新載入
+async function refreshFromServer(message) {
+  try {
+    const res = await fetch(location.pathname);
+    const result = swapCartArea(await res.text());
+    if (!result.ok) {
+      location.reload();
+      return;
+    }
+    showToast(message);
+  } catch (err) {
+    // 網路暫時有問題：下一次有通知時再更新
+  }
+}
+
 function connectCartSocket() {
   const protocol = location.protocol === 'https:' ? 'wss://' : 'ws://';
   const socket = new WebSocket(protocol + location.host + '/bistroops/order/ws');
 
-  socket.addEventListener('message', e => {
-    if (e.data !== 'cart-changed') return;
-    const itemOpen = document.querySelector('.order-sheet-item:not([hidden])');
-    if (itemOpen) {
-      showCartChangedBar();
+  socket.addEventListener('message', async e => {
+    if (e.data === 'cart-submitting') {   // 同桌有人開始送出訂單
+      lockForTableSubmit();
       return;
     }
-    reloadKeepingSheet();
+    // 店員在工作面板改了已送出的訂單（刪除、復原餐點、改備註、取消整筆訂單）：
+    //   為了讓「已點餐點」跟工作面板同步，一律更新（不管這支手機剛剛有沒有自己操作過），提示文字也不一樣
+    if (e.data === 'order-changed') {
+      refreshFromServer('餐廳已更新您的已點餐點');
+      return;
+    }
+    if (e.data !== 'cart-changed') return;
+    unlockForTableSubmit();               // 送單結束（成功或失敗）都會收到 cart-changed：先解開
+    if (cartBusy || Date.now() - lastCartAction < 2000) return;
+    refreshFromServer('同桌的人更新了購物車');
   });
 
   socket.addEventListener('close', () => setTimeout(connectCartSocket, 3000));
 }
 
-function reloadKeepingSheet() {
-  const openSheetEl = document.querySelector('.order-sheet:not([hidden])');
-  let open = '';
-  if (openSheetEl && openSheetEl.id === 'dbCartSheet') open = 'cart';
-  if (openSheetEl && openSheetEl.id === 'dbOrderedSheet') open = 'ordered';
-
-  location.href = location.pathname + (open ? '?open=' + open : '');
-}
-
-function showCartChangedBar() {
-  if (document.getElementById('cartChangedBar')) return;
-  const bar = document.createElement('button');
-  bar.type = 'button';
-  bar.id = 'cartChangedBar';
-  bar.className = 'order-changed-bar';
-  bar.textContent = '同桌的人更新了購物車，點這裡更新';
-  bar.addEventListener('click', reloadKeepingSheet);
-  document.body.appendChild(bar);
-}
-
 connectCartSocket();
+
+// A-8. 購物車的動作不重新載入頁面
+let cartBusy = false;
+let lastCartAction = 0;
+let toastTimer = null;
+
+function showToast(text) {
+  const toast = document.getElementById('orderToast');
+  if (!toast || !text) return;
+  toast.textContent = text;
+  toast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), 2000);
+}
+
+function swapCartArea(html) {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const newBar = doc.querySelector('.order-bar');
+  const oldBar = document.querySelector('.order-bar');
+  if (!newBar || !oldBar || !doc.getElementById('dbCartSheet')) return { ok: false };
+
+  oldBar.replaceWith(newBar);
+  // 購物車、已點餐點：面板本身留著，只換裡面的內容（標題列、品項列表、下方的合計和按鈕）。
+  //   整個面板換掉的話，order.css「從右邊滑進來」的動畫會再播一次，看起來像收起來又展開。
+  //   品項列表那一層（.order-sheet-body）是捲動的那一層，也留著、只換裡面的東西，捲到哪裡就停在哪裡。
+  ['dbCartSheet', 'dbOrderedSheet'].forEach(id => {
+    const oldSheet = document.getElementById(id);
+    const newSheet = doc.getElementById(id);
+    if (!oldSheet || !newSheet) return;
+    ['.order-sheet-head', '.order-sheet-foot'].forEach(part => {
+      const oldPart = oldSheet.querySelector(part);
+      const newPart = newSheet.querySelector(part);
+      if (oldPart && newPart) oldPart.replaceWith(newPart);
+    });
+    const oldBody = oldSheet.querySelector('.order-sheet-body');
+    const newBody = newSheet.querySelector('.order-sheet-body');
+    if (oldBody && newBody) oldBody.replaceChildren(...newBody.childNodes);
+  });
+  syncScrollLock();
+
+  const alert = doc.querySelector('.order-alert');
+  return { ok: true, message: alert ? alert.textContent.trim() : '' };
+}
+
+document.addEventListener('submit', async e => {
+  if (e.defaultPrevented) return;
+  const form = e.target;
+  const submitter = e.submitter;
+  const action = submitter && submitter.hasAttribute('formaction') ? submitter.formAction : form.action;
+  if (!action.includes('/order/cart/')) return;
+
+  e.preventDefault();
+  const body = new URLSearchParams(new FormData(form));
+  if (submitter && submitter.name) body.append(submitter.name, submitter.value);
+
+  // 送出中：鎖住按下去的按鈕，蓋上 20% 白色防止重複點擊（booking-loading.js 的 bookingLock）
+  //   菜品的對話框：只蓋住填寫的表單（照片在表單外面，不會被蓋到）；購物車：蓋住整個購物車
+  //   購物車裡數量的 −、＋：按鈕維持原樣（不顯示等待圖示），只蓋住那一個品項（含「編輯」），其他品項照常可以按
+  let lockBtn = submitter || form.querySelector('[type="submit"]');
+  let lockArea = form.closest('.order-sheet-item') ? form : form.closest('.order-sheet-panel');
+  if (lockBtn && lockBtn.closest('.order-stepper')) {
+    lockBtn = null;
+    lockArea = form;   // form.order-cart-item：一個品項
+  }
+  bookingLock(lockBtn, lockArea);
+
+  cartBusy = true;
+  try {
+    const res = await fetch(action, { method: 'POST', body });
+    const result = swapCartArea(await res.text());
+    if (!result.ok) {
+      location.reload();
+      return;
+    }
+    bookingUnlock(lockBtn, lockArea);   // 購物車整塊已經換成新的；菜品的對話框還是同一個，要自己解開
+    if (form.closest('.order-sheet-item')) closeSheets();
+    showToast(result.message);
+  } catch (err) {
+    if (submitter && submitter.name) {
+      const hidden = document.createElement('input');
+      hidden.type = 'hidden';
+      hidden.name = submitter.name;
+      hidden.value = submitter.value;
+      form.appendChild(hidden);
+    }
+    form.action = action;
+    form.submit();
+  } finally {
+    cartBusy = false;
+    lastCartAction = Date.now();
+  }
+});
+
+// A-9. 捲動時，類別按鈕標出目前看到的類別（加上 is-current，顏色跟點下去時一樣，樣式在 order.css）
+//   判定線：往下捲和往上捲用不同的線，換的時機才自然
+//     往下捲：類別標題被「點類別跳過來」時停的位置（.order-type 的 scroll-margin-top，也就是頁首＋上方類別那一排的下方）。
+//             標題往上捲過這條線，就換成那個類別。
+//     往上捲：畫面正中間。目前類別的標題往下退到畫面一半，才換回上一個類別（畫面上半部已經大多是上一個類別了）。
+//     往下捲時不會換回前面的類別、往上捲時不會跳到後面的類別（兩條線中間的那一段，維持原本的不變）。
+//   捲到頁面最底：直接標最後一個類別（最後一個類別比較短時，標題可能到不了判定線）。
+//   點類別跳過去：點下去的那顆立刻亮，頁面滑動停下來之後才恢復自動判斷（不然滑過去的途中會一路閃過中間的類別）。
+//   手機的類別是上方一排、可以左右滑：選取中的那顆被擠到外面時，那一排自動橫向滑過去讓它露出來。
+const catNav = document.querySelector('.order-cats');
+const catLinks = catNav ? [...catNav.querySelectorAll('.order-cat')] : [];
+const catSections = catLinks.map(a => document.getElementById(a.getAttribute('href').slice(1)));
+
+function setCurrentCat(link) {
+  if (!link || link.classList.contains('is-current')) return;
+  catLinks.forEach(a => {
+    a.classList.remove('is-current');
+    a.removeAttribute('aria-current');
+  });
+  link.classList.add('is-current');
+  link.setAttribute('aria-current', 'true');
+
+  // 類別那一排放不下、可以左右滑的時候（手機），把這顆滑到中間；電腦版是直排，全部看得到，不用滑
+  if (catNav.scrollWidth > catNav.clientWidth) {
+    const navBox = catNav.getBoundingClientRect();
+    const linkBox = link.getBoundingClientRect();
+    catNav.scrollTo({
+      left: catNav.scrollLeft + (linkBox.left - navBox.left) - (navBox.width - linkBox.width) / 2,
+      behavior: 'smooth'
+    });
+  }
+}
+
+// dir：'down' 往下捲、'up' 往上捲；沒有給（剛打開、改變視窗大小、點類別跳完）就用往下捲的線直接算
+function updateCurrentCat(dir) {
+  if (catLinks.length === 0) return;
+  const atBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
+  if (atBottom) {
+    setCurrentCat(catLinks[catLinks.length - 1]);
+    return;
+  }
+  let index = 0;   // 還沒捲到第一個類別時，標第一個
+  catSections.forEach((section, i) => {
+    if (!section) return;
+    const line = (dir === 'up')
+      ? window.innerHeight / 2                                          // 往上捲：畫面正中間
+      : parseFloat(getComputedStyle(section).scrollMarginTop) + 2;      // 往下捲：頁首（＋類別那一排）的下方
+    if (section.getBoundingClientRect().top <= line) index = i;
+  });
+  const nowIndex = catLinks.findIndex(a => a.classList.contains('is-current'));
+  if (nowIndex >= 0) {
+    if (dir === 'down') index = Math.max(index, nowIndex);   // 往下捲：不換回前面的類別
+    if (dir === 'up') index = Math.min(index, nowIndex);     // 往上捲：不跳到後面的類別
+  }
+  setCurrentCat(catLinks[index]);
+}
+
+let catJumping = false;   // 點類別跳過去的途中：先不要自動判斷
+let catTimer = 0;
+function waitScrollEnd() {   // 頁面停止捲動 150 毫秒後，算「滑動停下來了」
+  clearTimeout(catTimer);
+  catTimer = setTimeout(() => {
+    catJumping = false;
+    updateCurrentCat();
+  }, 150);
+}
+
+if (catLinks.length > 0) {
+  let ticking = false;
+  let lastY = window.scrollY;   // 上一次算的時候捲到哪裡：跟現在比，就知道是往上還是往下
+  window.addEventListener('scroll', () => {
+    if (catJumping) {
+      lastY = window.scrollY;
+      waitScrollEnd();
+      return;
+    }
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => {   // 一個畫面只算一次，捲動時才不會卡
+      ticking = false;
+      const y = window.scrollY;
+      if (y === lastY) return;
+      updateCurrentCat(y > lastY ? 'down' : 'up');
+      lastY = y;
+    });
+  }, { passive: true });
+
+  catNav.addEventListener('click', e => {
+    const link = e.target.closest('.order-cat');
+    if (!link) return;
+    catJumping = true;
+    setCurrentCat(link);
+    waitScrollEnd();   // 已經在那個位置、頁面不用滑的時候，也會在 150 毫秒後恢復
+  });
+
+  window.addEventListener('resize', updateCurrentCat);
+  updateCurrentCat();
+}
 
 })();

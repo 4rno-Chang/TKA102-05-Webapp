@@ -65,7 +65,7 @@
            prevDate  前一天、nextDate 後一天（已經是今天時放 null）、today 今天
          ================================================================ -->
     <div class="source-block" th:if="${orderslistAll != null}">
-      <p class="source-line"><span class="source-tag source-db">資料庫資料</span></p>
+      <p class="source-line"></p>
        <!-- 篩選列：條件都帶在網址上，例如 /staff/orders?status=PAID&date=2026-10-04&keyword=A1
            狀態的按鈕是連結（網址帶著目前的日期和關鍵字，所以換狀態時不會跑掉）。
            日期和關鍵字在一個 method="get" 的表單裡：在月曆選了日期、或在搜尋框按 Enter，表單就會送出；
@@ -106,7 +106,7 @@
       <section class="staff-card">
         <!-- 欄位名稱（手機寬度時隱藏） -->
         <div class="order-row order-row-head">
-          <span>訂單編號</span><span>桌號</span><span>下單時間</span><span class="num">金額</span><span>狀態</span><span></span>
+          <span>訂單編號</span><span>會員名稱</span><span>桌號</span><span>下單時間</span><span class="num">金額</span><span>狀態</span><span></span>
         </div>
 
         <!-- 每一筆訂單一列，點一下可以展開餐點明細。
@@ -125,6 +125,15 @@
           <div class="order-item" th:each="order : ${orderslistAll}">
             <button type="button" class="order-row" data-toggle-order aria-expanded="false">
               <span class="order-id" th:text="${#numbers.formatInteger(order.orders,8)}">訂單編號</span>
+              <!-- 會員名稱：標籤和名字放在同一格（同一個 span 裡，才不會多出一格、把後面的欄位擠歪），標籤就會一直貼著名字
+                   有會員 → 綠色「會員」＋名字（沒填姓名顯示手機）；沒有 → 只有灰色「非會員」
+                   樣式是 staff.css 的 .tag-green、.tag-gray -->
+              <span class="order-member">
+                <span class="tag" th:classappend="${order.member != null} ? 'tag-green' : 'tag-gray'"
+                      th:text="${order.member != null} ? '會員' : '非會員'">非會員</span>
+                <span th:if="${order.member != null}"
+                      th:text="${order.member.memName != null and !order.member.memName.isBlank()} ? ${order.member.memName} : ${order.member.memTel}">王小明</span>
+              </span>
               <span><span class="badge badge-table" th:text="${order.seatNo.seatNo}">A1</span></span>
               <span th:text="${#temporals.format(order.ordersTime,'HH:mm')}">12:30</span>
               <span class="num order-amount" th:text="'$' + ${order.ordersActualPrice}">$1,246</span>
@@ -140,12 +149,12 @@
 
             <div class="order-detail" hidden>
               <table class="receipt-table">
-                <thead><tr><th>品項</th><th class="num">數量</th><th class="num">單價</th><th class="num">金額</th><th class="num">折扣</th><th>狀態</th></tr></thead>
+                <thead><tr><th>品項</th><th class="num">數量</th><th class="num">單價</th><th class="num">金額</th><th class="num">折扣</th><th class="col-fit">狀態</th><th class="col-fit">送達時間</th></tr></thead>
                 <tbody>
                   <!-- 被取消的餐點仍然列出來（整列劃線變淡） -->
                   <tr th:each="item : ${order.ordersDetails}" th:classappend="${item.odStatus == '已取消'} ? 'row-cancelled'">
                     <td>
-                      <span class="dish-tag" th:text="${item.meal.mealType.mealtypeName}">主菜</span>
+                      <span class="dish-tag" th:if="${item.meal.mealType != null}" th:text="${item.meal.mealType.mealtypeName}">主菜</span><!-- 【菜單管理】刪除的菜品類別是 null：不顯示類別標籤 -->
                       <span th:text="${item.meal.mealName}">品名</span>
                       <small class="dish-note" th:if="${!#strings.isEmpty(item.odComment)}" th:text="${item.odComment}">備註</small>
                     </td>
@@ -153,7 +162,11 @@
                     <td class="num" th:text="'$'+ ${item.odDiscountPrice}">$620</td>
                     <td class="num" th:text="'$'+ ${item.odDiscountPrice *item.odMealNum}">$1240</td>
                     <td class="num discount" th:text="${item.odDiscountTotal}">0</td>
-                    <td th:text="${item.odStatus}">已送達</td>
+                    <!-- col-fit：狀態、送達時間只佔剛好的寬度，兩欄才會靠在一起（樣式在 orders.css） -->
+                    <td class="col-fit" th:text="${item.odStatus}">已送達</td>
+                    <!-- 送達時間：外場按「確認送達」時記下的時間（odServedAt），客訴上菜太慢時可以對照下單時間
+                         只有「已送達」而且有記到時間才顯示；製作中、等待送餐、已取消、舊資料沒有時間 → 「—」 -->
+                    <td class="col-fit" th:text="${item.odStatus == '已送達' and item.odServedAt != null} ? ${#temporals.format(item.odServedAt,'HH:mm')} : '—'">12:40</td>
                   </tr>
                 </tbody>
               </table>
@@ -168,50 +181,6 @@
       </section>
     </div>
 
-
-    <!-- ================================================================
-         【假資料】由 orders.js 的「B. 假資料」產生與控制。
-         資料庫的版本確認沒問題後，這個 div 整個刪掉（到它結尾的 </div> 為止）。
-         這裡的篩選、日期、搜尋都是 JS 直接在瀏覽器裡篩選，不會送到後端。
-         ================================================================ -->
-         
-<!--     <div class="source-block">
-      <p class="source-line" th:if="${orders != null}"><span class="source-tag">假資料</span></p>
-
-      篩選：依狀態 + 用桌號或訂單編號搜尋
-      <div class="orders-tools">
-        <div class="chips" id="orderFilters">
-          <button type="button" class="chip active" data-filter="ALL">全部</button>
-          <button type="button" class="chip" data-filter="ACTIVE">用餐中</button>
-          <button type="button" class="chip" data-filter="DONE">待結帳</button>
-          <button type="button" class="chip" data-filter="PAID">已結帳</button>
-          <button type="button" class="chip" data-filter="CANCELLED">已取消</button>
-        </div>
-
-        日期切換：在「全部」「已結帳」「已取消」會出現（「用餐中」「待結帳」時是 hidden）
-        <div class="date-nav" id="orderDateNav" hidden>
-          <button type="button" class="date-nav-btn" id="datePrev" aria-label="前一天">‹</button>
-          <span class="date-nav-date">
-            <span id="dateLabel"></span>
-            <input type="date" class="date-nav-input" id="dateInput" aria-label="選擇日期">
-          </span>
-          <button type="button" class="date-nav-btn" id="dateNext" aria-label="後一天">›</button>
-        </div>
-
-        <input type="search" class="staff-input" id="orderSearch" placeholder="輸入桌號或訂單編號" aria-label="搜尋訂單">
-      </div>
-
-      <section class="staff-card">
-        欄位名稱（手機寬度時隱藏）
-        <div class="order-row order-row-head">
-          <span>訂單編號</span><span>桌號</span><span>下單時間</span><span class="num">金額</span><span>狀態</span><span></span>
-        </div>
-        每一筆訂單一列，點一下可以展開餐點明細；由 orders.js 產生
-        <div id="orderList"></div>
-      </section>
-    </div> -->
-    
-    
   </main>
 
   <div class="staff-toast" id="staffToast" role="status" aria-live="polite"></div>

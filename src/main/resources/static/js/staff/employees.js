@@ -1,5 +1,11 @@
 /* ===== 員工停用／恢復在職確認視窗 ===== */
 
+function showEmployeeDeliveryStatus(result) {
+    const status = document.getElementById("employeeDeliveryStatus");
+    status.textContent = `員工 ${result.empNo}：${result.message}`;
+    status.hidden = false;
+}
+
 function employeeConfirm(message) {
     return new Promise((resolve) => {
         const modal = document.getElementById("employeeConfirmModal");
@@ -331,15 +337,44 @@ document.addEventListener("DOMContentLoaded", () => {
     const openBtn = document.getElementById("addEmployeeBtn");
     const closeBtn = document.getElementById("closeEmployeeModal");
     const cancelBtn = document.getElementById("cancelEmployeeBtn");
+    const resetPasswordBtn = document.getElementById("resetEmployeePasswordBtn");
     const modalTitle = document.getElementById("employeeModalTitle");
     const tbody = document.getElementById("employeeTableBody");
 
     // null 代表新增，數字代表編輯指定員工
     let editingEmpNo = null;
 
+    const initialPermissions = document.getElementById("employeeInitialPermissions");
+    const initialPermissionList = document.getElementById("employeeInitialPermissionList");
+    const initialPermissionError = document.getElementById("employeeInitialPermissionError");
+    EMPLOYEE_PERMISSIONS.forEach(permission => {
+        const label = document.createElement("label");
+        label.className = "employee-permission-item";
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.name = "initialPermissions";
+        checkbox.value = String(permission.no);
+        label.append(checkbox, document.createTextNode(permission.name));
+        initialPermissionList.appendChild(label);
+    });
+    initialPermissionList.addEventListener("change", () => {
+        if (initialPermissionList.querySelector("input:checked")) {
+            initialPermissionError.hidden = true;
+            initialPermissions.removeAttribute("aria-invalid");
+        }
+    });
+    form.addEventListener("reset", () => {
+        initialPermissionError.hidden = true;
+        initialPermissions.removeAttribute("aria-invalid");
+    });
+
     // 開啟新增員工視窗
     openBtn.addEventListener("click", () => {
         editingEmpNo = null;
+        initialPermissions.hidden = false;
+        initialPermissions.parentElement.hidden = false;
+        initialPermissions.disabled = false;
+        resetPasswordBtn.hidden = true;
         modalTitle.textContent = "新增員工";
 
         form.reset();
@@ -374,6 +409,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // 設定目前為編輯模式
             editingEmpNo = empNo;
+            initialPermissions.hidden = true;
+            initialPermissions.parentElement.hidden = true;
+            initialPermissions.disabled = true;
+            resetPasswordBtn.hidden = false;
             modalTitle.textContent = "編輯員工";
 
             // 帶入原本資料
@@ -381,6 +420,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             document.getElementById("empName").value = emp.empName ?? "";
             document.getElementById("empTel").value = emp.empTel ?? "";
+            document.getElementById("empEmail").value = emp.empEmail ?? "";
             document.getElementById("empIce").value = emp.empIce ?? "";
             document.getElementById("empIcetel").value = emp.empIcetel ?? "";
             document.getElementById("empAdd").value = emp.empAdd ?? "";
@@ -403,6 +443,34 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+
+    resetPasswordBtn.addEventListener("click", async () => {
+        if (editingEmpNo === null || resetPasswordBtn.disabled) return;
+        const empNo = editingEmpNo;
+        resetPasswordBtn.disabled = true;
+        try {
+            if (!await employeeConfirm(
+                `確定要重設員工 ${empNo} 的密碼嗎？舊密碼將立即失效，新的臨時密碼會寄到目前已儲存的 Email，須於 24 小時內登入並修改密碼。若剛修改信箱，請先取消並儲存員工資料，再重新操作。`
+            )) return;
+            const response = await fetch(`/api/employees/${empNo}/reset-password`, {
+                method: "POST"
+            });
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                staffToast(result.message || (response.status === 403 ? "權限不足" :
+                    response.status === 401 ? "請先登入" : "重設密碼失敗，請稍後再試"));
+                return;
+            }
+            showEmployeeDeliveryStatus(result);
+            closeModal();
+            staffToast(result.emailSent ? "臨時密碼已寄至員工信箱" : "通知信寄送失敗，請查看員工列表上方的說明");
+        } catch (error) {
+            console.error("重設員工密碼失敗：", error);
+            staffToast("重設密碼失敗，請稍後再試");
+        } finally {
+            resetPasswordBtn.disabled = false;
+        }
+    });
 
     // 點擊權限按鈕，開啟員工權限設定視窗
     tbody.addEventListener("click", async (event) => {
@@ -536,7 +604,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		const empName = enableBtn.dataset.empName;
 
 		if (!await employeeConfirm(
-		    `確定要取消停用員工 ${empNo}－${empName}，恢復在職嗎？`
+		    `確定要恢復員工 ${empNo}－${empName} 的在職狀態嗎？舊密碼將失效，系統會寄送 24 小時內有效的臨時密碼。若寄信失敗，仍會恢復在職，可編輯信箱後按「忘記密碼」重新寄送。`
 		)) {
 		    return;
 		}
@@ -549,16 +617,23 @@ document.addEventListener("DOMContentLoaded", () => {
                 { method: "PATCH" }
             );
 
+            const result = await response.json().catch(() => ({}));
             if (!response.ok) {
-                throw new Error("HTTP " + response.status);
+                staffToast(result.message || (response.status === 403 ? "權限不足" :
+                    response.status === 401 ? "請先登入" : "恢復在職失敗"));
+                if (response.status === 409) await loadEmployees();
+                return;
             }
 
-            staffToast("員工已恢復在職！");
+            showEmployeeDeliveryStatus(result);
+            staffToast(result.emailSent ? "員工已恢復在職，臨時密碼已寄出" :
+                "已恢復在職，但寄信失敗，請查看列表上方說明並編輯信箱");
             await loadEmployees();
 
         } catch (error) {
             console.error("取消停用員工失敗：", error);
             staffToast("取消停用員工失敗，請稍後再試");
+        } finally {
             enableBtn.disabled = false;
         }
     });
@@ -727,19 +802,33 @@ document.addEventListener("DOMContentLoaded", () => {
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
 
+        const permissions = Array.from(initialPermissionList.querySelectorAll("input:checked"),
+            checkbox => Number(checkbox.value));
+        if (editingEmpNo === null && permissions.length === 0) {
+            initialPermissionError.hidden = false;
+            initialPermissions.setAttribute("aria-invalid", "true");
+            initialPermissions.scrollIntoView({ block: "center", behavior: "smooth" });
+            initialPermissionList.querySelector("input").focus({ preventScroll: true });
+            staffToast("請至少勾選一項員工權限");
+            return;
+        }
+
         const submitBtn = form.querySelector('button[type="submit"]');
         submitBtn.disabled = true;
 
         const employee = {
             empName: document.getElementById("empName").value.trim(),
             empTel: document.getElementById("empTel").value.trim(),
+            empEmail: document.getElementById("empEmail").value.trim(),
             empIce: document.getElementById("empIce").value.trim(),
             empIcetel: document.getElementById("empIcetel").value.trim(),
             empAdd: document.getElementById("empAdd").value.trim(),
             empSal: Number(document.getElementById("empSal").value)
         };
+        if (editingEmpNo === null) employee.permissions = permissions;
 
         let createdEmpNo = null;
+        let deliveryResult = null;
 
         try {
             // 1. 判斷新增或修改員工
@@ -759,16 +848,21 @@ document.addEventListener("DOMContentLoaded", () => {
             );
 
             if (!response.ok) {
+                const errorResult = await response.json().catch(() => ({}));
                 throw new Error(
-                    (isEditing ? "修改" : "新增") +
+                    errorResult.message || (isEditing ? "修改" : "新增") +
                     "員工失敗，HTTP " + response.status
                 );
             }
 
             // 新增時取得新編號，修改時沿用原編號
-            createdEmpNo = isEditing
-                ? editingEmpNo
-                : await response.json();
+            if (isEditing) {
+                createdEmpNo = editingEmpNo;
+            } else {
+                deliveryResult = await response.json();
+                createdEmpNo = deliveryResult.empNo;
+                showEmployeeDeliveryStatus(deliveryResult);
+            }
 
 
             // 2. 如果有選擇照片，再上傳照片
@@ -811,7 +905,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
 			// 統一使用 Bistroops 後台 Toast
 			staffToast(
-			    isEditing ? "✓ 員工修改成功" : "✓ 員工新增成功"
+			    isEditing ? "✓ 員工修改成功" : deliveryResult.emailSent
+                    ? "✓ 員工已新增，臨時密碼已寄出"
+                    : "員工已新增，但通知信寄送失敗，請查看列表上方的說明"
 			);
             closeModal();
             await loadEmployees();
@@ -830,8 +926,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 await loadEmployees();
             } else {
 				staffToast(
-				    (editingEmpNo !== null ? "修改" : "新增") +
-				    "員工失敗，請檢查資料或後端服務"
+				    error.message || "員工儲存失敗，請稍後再試"
 				);
             }
 
