@@ -55,6 +55,11 @@ services:
       ECPAY_PAY_URL: ${ECPAY_PAY_URL:?請在 .env 設定 ECPAY_PAY_URL}
       ECPAY_RETURN_URL: ${ECPAY_RETURN_URL:?請在 .env 設定 ECPAY_RETURN_URL}
       WAITING_JOIN_URL: ${WAITING_JOIN_URL:?請在 .env 設定 WAITING_JOIN_URL}
+      # 員工 Email（新增員工、恢復在職時寄臨時密碼）：沒填就不寄信，程式照常啟動
+      EMPLOYEE_MAIL_USERNAME: ${EMPLOYEE_MAIL_USERNAME:-}
+      EMPLOYEE_MAIL_PASSWORD: ${EMPLOYEE_MAIL_PASSWORD:-}
+      EMPLOYEE_MAIL_FROM: ${EMPLOYEE_MAIL_FROM:-}
+      EMPLOYEE_LOGIN_URL: ${EMPLOYEE_LOGIN_URL:-http://localhost:18088/staff/login}
     depends_on:
       - mysql
       - redis
