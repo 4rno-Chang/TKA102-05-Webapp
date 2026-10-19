@@ -34,6 +34,32 @@ public class EmployeeService {
 	    this.passwordEncoder = passwordEncoder;
 	}
 
+	// 員工與初始權限在同一交易內儲存，提交後才寄出密碼信。
+	@Transactional
+	public EmployeeVO addEmployeeWithPermissions(EmployeeVO employee, String temporaryPassword,
+	        List<Integer> permNos) {
+	    if (permNos == null || permNos.isEmpty()) {
+	        throw new IllegalArgumentException("請至少勾選一項員工權限");
+	    }
+	    if (permNos.stream().anyMatch(no -> no == null || no < 1 || no > 7)) {
+	        throw new IllegalArgumentException("包含無效的權限編號");
+	    }
+	    Set<Integer> uniquePermNos = new HashSet<>(permNos);
+	    List<PermissionVO> permissions = permissionRepository.findAllById(uniquePermNos);
+	    if (permissions.size() != uniquePermNos.size()) {
+	        throw new IllegalArgumentException("包含不存在的權限編號");
+	    }
+	    EmployeeVO saved = addEmployee(employee, temporaryPassword);
+	    for (PermissionVO permission : permissions) {
+	        EmployeePermissionVO ep = new EmployeePermissionVO();
+	        ep.setIds(new EmployeePermissionId(saved.getEmpNo(), permission.getPermNo()));
+	        ep.setEmployee(saved);
+	        ep.setPermission(permission);
+	        saved.getEmployeepermissions().add(ep);
+	    }
+	    return employeeRepository.save(saved);
+	}
+
 	// 新增員工
 	@Transactional
 	public EmployeeVO addEmployee(EmployeeVO employee, String temporaryPassword) {
@@ -311,15 +337,22 @@ public class EmployeeService {
 
 	// 取消停用員工（恢復在職）
 	@Transactional
-	public void enableEmployee(Integer empNo) {
+	public EmployeeVO enableEmployee(Integer empNo, String temporaryPassword) {
 
-		EmployeeVO employee = employeeRepository.findById(empNo)
-				.orElseThrow(() -> new IllegalArgumentException("找不到員工：" + empNo));
+		// 鎖定目標列，避免重複解除停用同時產生兩組臨時密碼。
+		EmployeeVO employee = employeeRepository.findForReactivation(empNo)
+				.orElseThrow(() -> new java.util.NoSuchElementException("找不到員工：" + empNo));
 
-		// 將員工狀態恢復為在職
+		if (!"2".equals(employee.getEmpStatus())) {
+			throw new IllegalStateException("此員工已非停用狀態，請重新整理列表；需要補寄請使用忘記密碼");
+		}
+		// 信箱問題不阻止復職，讓主管可編輯補正後再重設密碼寄信。
+		employee.setEmpPassword(passwordEncoder.encode(temporaryPassword));
+		employee.setEmpPwdChanged(false);
+		employee.setEmpTempPasswordExpiresAt(java.time.Instant.now().plus(java.time.Duration.ofHours(24)));
 		employee.setEmpStatus("1");
 
-		employeeRepository.save(employee);
+		return employeeRepository.save(employee);
 	}
 
 	// 上傳或更換員工照片

@@ -19,9 +19,9 @@ public class EmployeeAccountService {
 
     public record DeliveryResult(Integer empNo, boolean emailSent, String message) {}
 
-    public DeliveryResult createEmployee(EmployeeVO employee) {
+    public DeliveryResult createEmployee(EmployeeVO employee, java.util.List<Integer> permissions) {
         String password = generateTemporaryPassword();
-        EmployeeVO saved = employeeService.addEmployee(employee, password);
+        EmployeeVO saved = employeeService.addEmployeeWithPermissions(employee, password, permissions);
         return deliver(saved, password, true);
     }
 
@@ -29,6 +29,17 @@ public class EmployeeAccountService {
         String password = generateTemporaryPassword();
         EmployeeVO saved = employeeService.resetPassword(empNo, password);
         return deliver(saved, password, false);
+    }
+
+    public DeliveryResult enableEmployee(Integer empNo) {
+        String password = generateTemporaryPassword();
+        EmployeeVO saved = employeeService.enableEmployee(empNo, password);
+        // Service 交易已提交；寄送失敗不回復成停用狀態。
+        boolean sent = mailService.sendTemporaryPassword(saved, password);
+        String message = sent
+                ? "員工已恢復在職，臨時密碼已寄至員工信箱，請於 24 小時內登入並修改密碼"
+                : "員工已恢復在職，舊密碼已失效，但通知信寄送失敗。請進入編輯補上或修改 Email 並儲存，確認寄信設定後，再按「忘記密碼」重新寄送";
+        return new DeliveryResult(saved.getEmpNo(), sent, message);
     }
 
     String generateTemporaryPassword() {

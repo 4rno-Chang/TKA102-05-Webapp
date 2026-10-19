@@ -212,7 +212,7 @@
   <div class="meal-modal" id="mealDialog" role="dialog" aria-modal="true" aria-labelledby="mealDialogTitle"
     th:attr="data-open=${formError != null}" hidden>
     <form class="meal-modal-box" id="mealForm" th:action="@{/staff/meal/save}" method="post" enctype="multipart/form-data"
-      th:attr="data-old-promos=${mealForm?.promos != null ? #strings.listJoin(mealForm.promos.?[joined].![promoteNo + ':' + (price ?: '')], ',') : ''}">
+      th:attr="data-old-promos=${mealForm?.promos != null ? #strings.listJoin(mealForm.promos.?[joined].![promoteNo + ':' + (price ?: '')], ',') : ''}" data-loading=".meal-modal-box">
       <input type="hidden" name="mealNo" th:value="${mealForm?.mealNo}">
 
       <header class="meal-modal-head">
@@ -227,7 +227,7 @@
         <p class="meal-flash is-error" th:if="${formError != null}" th:text="${formError}">類別名稱已經有了</p>
 
         <section class="meal-step">
-          <h3><span>1</span>類別</h3>
+          <h3><span>1</span>類別<small>必填</small></h3>
           <div class="meal-type-row">
             <label class="meal-field">
               <span class="sr-only">類別</span>
@@ -268,7 +268,7 @@
           </label>
           <div class="meal-field-row">
             <label class="meal-field">
-              <span>價格</span>
+              <span>價格<b>必填，整數</b></span>
               <span class="meal-money"><input type="number" class="staff-input" name="mealPrice" id="formPrice" min="1" max="99999" step="1" required th:value="${mealForm?.mealPrice}"></span>
             </label>
             <fieldset class="meal-field">
@@ -292,8 +292,6 @@
             <span data-drop-text>選擇圖片（5MB 以內，寬 1000px 左右最清楚）</span>
             <input type="file" name="mealImg" accept="image/*">
           </label>
-          <!-- 修改、而且原本有圖片時才出現 -->
-          <label class="meal-check" id="formRemoveImg" hidden><input type="checkbox" name="removeImg" value="true"> 刪除目前的圖片（前台改用插圖）</label>
         </section>
 
         <section class="meal-step">
@@ -392,7 +390,7 @@
           </nav>
 
           <!-- 右：編輯（新增和修改共用；mealtypeNo 是空的就是新增） -->
-          <form class="meal-types-edit" id="typeForm" th:action="@{/staff/meal/type/save}" method="post">
+          <form class="meal-types-edit" id="typeForm" th:action="@{/staff/meal/type/save}" method="post" data-loading=".meal-modal-box">
             <h3 class="meal-types-title" id="typeFormTitle">修改類別</h3>
             <input type="hidden" name="mealtypeNo">
             <label class="meal-field">
@@ -427,13 +425,13 @@
   </div>
 
   <!-- 刪除類別：編輯類別裡的「刪除類別」送出這個表單（mealtypeNo、確認的話由 meal.js 填） -->
-  <form id="typeDeleteForm" th:action="@{/staff/meal/type/delete}" method="post" data-confirm="確定要刪除這個類別嗎？" data-confirm-warn>
+  <form id="typeDeleteForm" th:action="@{/staff/meal/type/delete}" method="post" data-confirm="確定要刪除這個類別嗎？" data-confirm-warn data-loading=".meal-modal-box">
     <input type="hidden" name="mealtypeNo">
   </form>
 
   <!-- 刪除菜品：修改對話框左下角的「刪除菜品」送出這個表單（mealNo 由 meal.js 填）。軟刪除：類別改成 null，
        後台列表、前台菜單、點餐頁都查不到；以前的訂單還看得到這道菜 -->
-  <form id="mealDeleteForm" th:action="@{/staff/meal/delete}" method="post" data-confirm="確定要刪除這道菜嗎？" data-confirm-warn>
+  <form id="mealDeleteForm" th:action="@{/staff/meal/delete}" method="post" data-confirm="確定要刪除這道菜嗎？" data-confirm-warn data-loading=".meal-modal-box">
     <input type="hidden" name="mealNo">
   </form>
 
