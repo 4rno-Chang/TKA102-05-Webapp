@@ -21,7 +21,6 @@ import com.bistroops.meal.model.MenuService;
 import com.bistroops.member.model.MemberService;
 import com.bistroops.member.model.MemberVO;
 import com.bistroops.promote.model.PromoteService;
-import com.bistroops.qa.model.QaService;
 import com.bistroops.reservation.model.ReservationService;
 
 import jakarta.servlet.http.HttpSession;
@@ -47,9 +46,6 @@ public class IndexController_inSpringBoot {
 	@Autowired
 	private HeroSlideService heroSlideService;   // 首頁輪播（公告，之後加上活動）
 
-	@Autowired
-	private QaService qaService;                 // 首頁常見問題（點擊最多的 5 題）
-	
 	@Autowired 
 	private MenuService menuService;                     // 首頁精選菜單的圖片（和菜單頁同一套）
 	
@@ -77,7 +73,7 @@ public class IndexController_inSpringBoot {
         
         // 先在這裡查好：資料庫出錯時會顯示 500 錯誤頁（在模板裡查的話，畫面送出一半才出錯，只會出現半頁）
         model.addAttribute("heroSlides", heroSlideService.getHeroSlides());
-        model.addAttribute("popularQaList", qaService.getPopular(5));
+        // 首頁常見問題改由 qa-render.js 向 QaApiController 拿（ThymeToJS 分支），這裡不再放 popularQaList
         // 精選菜單：和 FrontMenuController.menu 一樣準備類別和「類別代表」
         List<MenuMealCardDTO> cards = menuService.getMenuCards(promoteService.getActivePrices());
         model.addAttribute("menuSections", menuService.getMenuSections(cards));

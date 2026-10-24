@@ -3,7 +3,6 @@ package com.bistroops.qa.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -19,10 +18,9 @@ public class FrontQaController {
 	@Autowired
 	private QaService qaService;
 
-	// 全部常見問題，點擊多的在前
+	// 常見問題頁：只回傳頁面外框，問答由 qa-render.js 向 QaApiController 拿 JSON 後產生
 	@GetMapping("")
-	public String list(Model model) {
-		model.addAttribute("qaList", qaService.getAllPopularFirst());
+	public String list() {
 		return "front/qa/listAll";
 	}
 

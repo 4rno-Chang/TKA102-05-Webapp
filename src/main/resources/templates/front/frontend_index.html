@@ -109,25 +109,19 @@
 			<div class="container">
 				<p class="eyebrow">FAQ</p>
 				<h2 class="section-title">常見問題</h2>
-				<!-- 內容來自資料庫的 qa 表：由 IndexController_inSpringBoot 的 frontIndex 放進 Model（popularQaList ＝ QaService.getPopular(5)），
-				     只顯示點擊最多的 5 題；全部的問答在「more→」連到的 /bistroops/qa（FrontQaController）。
-				     點問題展開答案的效果在 frontend_index.js「3. 常見問題」；
-				     展開時 qa-click.js 送出點擊次數（網址在 data-click-url） -->
-				<div class="faq-list" id="faqList" th:with="qaList=${popularQaList}">
-					<p th:if="${#lists.isEmpty(qaList)}">目前沒有常見問題</p>
-					<div class="faq-item" th:each="qa : ${qaList}"
-						th:attr="data-click-url=@{/bistroops/qa/{no}/click(no=${qa.qaNo})}">
-						<button class="faq-question" aria-expanded="false">
-							<span th:text="|Q：${qa.qaTitle}|"></span>
-							<span class="faq-icon">+</span>
-						</button>
-						<div class="faq-answer"><p th:text="|A：${qa.qaContent}|"></p></div>
-					</div>
+				<!-- 清單一開始是空的：qa-render.js 向 GET /bistroops/api/qa?limit=5（QaApiController）拿點擊最多的 5 題再產生；
+				     全部的問答在「more→」連到的 /bistroops/qa（FrontQaController）。
+				     點問題展開答案的效果在 frontend_index.js「3. 常見問題」（listener 掛在 #faqList，之後加進來的題目也有效）；
+				     展開時 qa-click.js 送出點擊次數（網址在 data-click-url，由 data-click-base 接上編號） -->
+				<div class="faq-list" id="faqList" data-qa-style="faq"
+					th:attr="data-qa-api=@{/bistroops/api/qa(limit=5)},data-click-base=@{/bistroops/qa/}">
+					<p data-qa-when="empty" hidden>目前沒有常見問題</p>
 				</div>
 				<div class="btn-center">
 					<a th:href="@{/bistroops/qa}" class="btn-outline">more→</a>
 				</div>
 			</div>
+			<script th:src="@{/js/front/qa-render.js}" defer></script>
 			<script th:src="@{/js/front/qa-click.js}" defer></script>
 		</section>
 

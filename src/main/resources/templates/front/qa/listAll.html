@@ -16,9 +16,10 @@
   <link rel="stylesheet" th:href="@{/css/front/member.css}" />
   <link rel="stylesheet" th:href="@{/css/front/qa.css}" />
   <!-- 不載入 frontend_index.js：它會抓首頁才有的輪播、FAQ 等元素，在這頁會出錯；版型需要的功能寫在 announcement.js
-       qa-click.js：展開一題時送出點擊次數 -->
+       qa-render.js：向 API 拿問答、產生清單；qa-click.js：展開一題時送出點擊次數 -->
   <script th:src="@{/js/front/member.js}" defer></script>
   <script th:src="@{/js/front/announcement.js}" defer></script>
+  <script th:src="@{/js/front/qa-render.js}" defer></script>
   <script th:src="@{/js/front/qa-click.js}" defer></script>
 </head>
 
@@ -29,31 +30,23 @@
   <header th:replace="~{front/front_layout :: header('qa')}"></header>
 
   <!-- ========== 常見問題 ==========
-       qaList：FrontQaController 放入，全部問答，點擊多的在前
-       每一題用原生的 <details>，點問題就展開答案，不需要 JS；data-click-url 給 qa-click.js 記錄點擊次數 -->
+       清單一開始是空的，qa-render.js 向 GET /bistroops/api/qa（QaApiController）拿全部問答（點擊多的在前）再產生
+       每一題用原生的 <details>，點問題就展開答案；data-click-url 給 qa-click.js 記錄點擊次數 -->
   <main class="qa-page section">
     <div class="container">
       <p class="eyebrow">FAQ</p>
       <h1 class="section-title">常見問題</h1>
 
-      <div class="qa-list" th:unless="${#lists.isEmpty(qaList)}">
-        <details class="qa-item" th:each="qa : ${qaList}"
-          th:attr="data-click-url=@{/bistroops/qa/{no}/click(no=${qa.qaNo})}">
-          <summary class="qa-question">
-            <span th:text="|Q：${qa.qaTitle}|"></span>
-            <span class="qa-icon" aria-hidden="true">+</span>
-          </summary>
-          <p class="qa-answer" th:text="|A：${qa.qaContent}|"></p>
-        </details>
-      </div>
+      <div class="qa-list" data-qa-style="page"
+        th:attr="data-qa-api=@{/bistroops/api/qa},data-click-base=@{/bistroops/qa/}"></div>
 
-      <!-- 沒有任何問答時 -->
-      <div class="qa-empty" th:if="${#lists.isEmpty(qaList)}">
+      <!-- 沒有任何問答時（qa-render.js 判斷後才顯示） -->
+      <div class="qa-empty" data-qa-when="empty" hidden>
         <p>目前沒有常見問題</p>
         <a class="btn-outline" th:href="@{/bistroops}">回首頁</a>
       </div>
 
-      <p class="qa-back" th:unless="${#lists.isEmpty(qaList)}">
+      <p class="qa-back" data-qa-when="loaded" hidden>
         <a class="btn-outline" th:href="@{/bistroops}">← 回首頁</a>
       </p>
     </div>
