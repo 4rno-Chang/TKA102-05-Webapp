@@ -80,6 +80,12 @@
 
 .qa-back { margin-top: 40px; text-align: center; }
 
+/* qa-render.js 還沒判斷前先藏起來：.qa-empty 的 display: flex 會蓋掉 hidden，所以要明確寫 */
+[data-qa-when][hidden] { display: none; }
+
+/* API 失敗時 qa-render.js 放進清單的訊息 */
+.qa-load-error { padding: 24px 0; color: var(--color-text-light); text-align: center; }
+
 
 /* ========== 3. 手機 ========== */
 @media (max-width: 768px) {
