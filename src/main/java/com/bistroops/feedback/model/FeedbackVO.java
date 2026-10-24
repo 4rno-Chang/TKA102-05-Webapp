@@ -1,0 +1,109 @@
+package com.bistroops.feedback.model;
+
+import java.time.LocalDateTime;
+
+import com.bistroops.orders.model.OrdersVO;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name="feedback")
+public class FeedbackVO {
+
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@Column(name="feedback_no")
+	private Integer feedbackNo;
+	
+	@ManyToOne
+	@JoinColumn(name="orders_no",referencedColumnName = "orders_no")
+	private OrdersVO orders;
+
+	@Column(name="fee_customer")
+	private String feeCustomer;
+	
+	@Column(name="fee_customer_tel")
+	private String feeCustomerTel;
+	
+	@Column(name="fee_time", updatable = false)
+	private LocalDateTime feeTime;
+	
+	@Column(name="fee_content")
+	private String feeContent;
+	
+	@Column(name="fee_rating", columnDefinition = "tinyint")
+	private Integer feeRating;
+	
+	// 用餐後幾天內可以填寫和修改回饋（從訂單的 ordersTime 開始算，填寫和修改是同一個期限）
+	// 判斷寫在 FeedbackService 的 writeDeadline()、isWritable()
+	public static final int FEEDBACK_DAYS = 7;
+
+	public FeedbackVO() {
+	}
+
+	public Integer getFeedbackNo() {
+		return feedbackNo;
+	}
+
+	public void setFeedbackNo(Integer feedbackNo) {
+		this.feedbackNo = feedbackNo;
+	}
+
+	public OrdersVO getOrders() {
+		return orders;
+	}
+
+	public void setOrders(OrdersVO orders) {
+		this.orders = orders;
+	}
+
+	public String getFeeCustomer() {
+		return feeCustomer;
+	}
+
+	public void setFeeCustomer(String feeCustomer) {
+		this.feeCustomer = feeCustomer;
+	}
+
+	public String getFeeCustomerTel() {
+		return feeCustomerTel;
+	}
+
+	public void setFeeCustomerTel(String feeCustomerTel) {
+		this.feeCustomerTel = feeCustomerTel;
+	}
+
+	public LocalDateTime getFeeTime() {
+		return feeTime;
+	}
+
+	public void setFeeTime(LocalDateTime feeTime) {
+		this.feeTime = feeTime;
+	}
+
+	public String getFeeContent() {
+		return feeContent;
+	}
+
+	public void setFeeContent(String feeContent) {
+		this.feeContent = feeContent;
+	}
+
+	public Integer getFeeRating() {
+		return feeRating;
+	}
+
+	public void setFeeRating(Integer feeRating) {
+		this.feeRating = feeRating;
+	}
+
+
+
+}

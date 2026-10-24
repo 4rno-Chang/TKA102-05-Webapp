@@ -1,0 +1,405 @@
+package com.bistroops.employee.model;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.HashSet;
+
+import com.bistroops.permission.model.PermissionVO;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
+import com.bistroops.permission.model.PermissionRepository;
+
+@Service
+public class EmployeeService {
+
+    private final PasswordEncoder passwordEncoder;
+
+    private final EmployeeRepository employeeRepository;
+	private final EmployeePermissionRepository employeePermissionRepository;
+	private final PermissionRepository permissionRepository;
+
+	// 建構子注入 Repository
+	public EmployeeService(EmployeeRepository employeeRepository,
+	        EmployeePermissionRepository employeePermissionRepository,
+	        PermissionRepository permissionRepository,
+	        PasswordEncoder passwordEncoder) {
+
+	    this.employeeRepository = employeeRepository;
+	    this.employeePermissionRepository = employeePermissionRepository;
+	    this.permissionRepository = permissionRepository;
+	    this.passwordEncoder = passwordEncoder;
+	}
+
+	// 員工與初始權限在同一交易內儲存，提交後才寄出密碼信。
+	@Transactional
+	public EmployeeVO addEmployeeWithPermissions(EmployeeVO employee, String temporaryPassword,
+	        List<Integer> permNos) {
+	    if (permNos == null || permNos.isEmpty()) {
+	        throw new IllegalArgumentException("請至少勾選一項員工權限");
+	    }
+	    if (permNos.stream().anyMatch(no -> no == null || no < 1 || no > 7)) {
+	        throw new IllegalArgumentException("包含無效的權限編號");
+	    }
+	    Set<Integer> uniquePermNos = new HashSet<>(permNos);
+	    List<PermissionVO> permissions = permissionRepository.findAllById(uniquePermNos);
+	    if (permissions.size() != uniquePermNos.size()) {
+	        throw new IllegalArgumentException("包含不存在的權限編號");
+	    }
+	    EmployeeVO saved = addEmployee(employee, temporaryPassword);
+	    for (PermissionVO permission : permissions) {
+	        EmployeePermissionVO ep = new EmployeePermissionVO();
+	        ep.setIds(new EmployeePermissionId(saved.getEmpNo(), permission.getPermNo()));
+	        ep.setEmployee(saved);
+	        ep.setPermission(permission);
+	        saved.getEmployeepermissions().add(ep);
+	    }
+	    return employeeRepository.save(saved);
+	}
+
+	// 新增員工
+	@Transactional
+	public EmployeeVO addEmployee(EmployeeVO employee, String temporaryPassword) {
+
+		// 1. 檢查手機號碼
+		String phone = employee.getEmpTel();
+
+		if (phone == null || !phone.matches("^09\\d{8}$")) {
+			throw new IllegalArgumentException("請輸入正確的10碼手機號碼");
+		}
+
+		employee.setEmpEmail(validateEmail(employee.getEmpEmail()));
+
+		// 2. 新增員工，讓 MySQL 自動產生員工編號
+		employee.setEmpNo(null);
+
+		// 3. 儲存臨時密碼的雜湊，明文僅用於寄送通知信
+		employee.setEmpPassword(passwordEncoder.encode(temporaryPassword));
+		employee.setEmpTempPasswordExpiresAt(java.time.Instant.now().plus(java.time.Duration.ofHours(24)));
+
+		// 4. 新增員工預設為在職
+		employee.setEmpStatus("1");
+
+		// 新增員工尚未完成首次密碼修改
+		employee.setEmpPwdChanged(false);
+
+		// 5. 儲存員工
+		return employeeRepository.save(employee);
+	}
+
+	// 員工登入驗證
+	@Transactional(readOnly = true)
+	public EmployeeVO login(Integer empNo, String password) {
+
+		// 1. 根據員工編號查詢
+		EmployeeVO employee = employeeRepository.findById(empNo).orElse(null);
+
+		// 2. 員工不存在
+		if (employee == null) {
+			return null;
+		}
+
+		// 3. 停用員工不可登入
+		if (!"1".equals(employee.getEmpStatus())) {
+			return null;
+		}
+		if (!Boolean.TRUE.equals(employee.getEmpPwdChanged())
+		        && employee.getEmpTempPasswordExpiresAt() != null
+		        && !java.time.Instant.now().isBefore(employee.getEmpTempPasswordExpiresAt())) {
+		    return null;
+		}
+
+		// 4. 驗證員工密碼
+		String storedPassword = employee.getEmpPassword();
+
+		if (password == null || storedPassword == null) {
+		    return null;
+		}
+
+		if (!passwordEncoder.matches(password, storedPassword)) {
+		    return null;
+		}
+
+		
+
+		// 5. 驗證成功，回傳員工資料
+		return employee;
+	}
+
+	// 主管重設密碼，寄送到資料庫目前儲存的信箱
+	@Transactional
+	public EmployeeVO resetPassword(Integer empNo, String temporaryPassword) {
+	    EmployeeVO employee = employeeRepository.findById(empNo)
+	            .orElseThrow(() -> new IllegalArgumentException("找不到員工"));
+	    if (!"1".equals(employee.getEmpStatus())) {
+	        throw new IllegalArgumentException("此員工已停用");
+	    }
+	    validateEmail(employee.getEmpEmail());
+	    employee.setEmpPassword(passwordEncoder.encode(temporaryPassword));
+	    employee.setEmpPwdChanged(false);
+	    employee.setEmpTempPasswordExpiresAt(java.time.Instant.now().plus(java.time.Duration.ofHours(24)));
+	    return employeeRepository.save(employee);
+	}
+
+	// 員工修改密碼
+	@Transactional
+	public void changePassword(Integer empNo, String newPassword) {
+
+	    // 1. 查詢員工
+	    EmployeeVO employee = employeeRepository.findById(empNo)
+	            .orElseThrow(() -> new IllegalArgumentException("找不到員工"));
+
+	    // 2. 確認員工仍在職
+	    if (!"1".equals(employee.getEmpStatus())) {
+	        throw new IllegalArgumentException("此員工已停用");
+	    }
+
+	    // 3. 檢查新密碼：至少 8 碼，必須包含英文與數字
+	    if (newPassword == null ||
+	            !newPassword.matches("^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{8,}$")) {
+	        throw new IllegalArgumentException("新密碼至少8碼，且必須包含英文及數字");
+	    }
+
+	    // 4. 新密碼不可與目前密碼相同
+	    String storedPassword = employee.getEmpPassword();
+
+	    if (storedPassword != null &&
+	            passwordEncoder.matches(newPassword, storedPassword)) {
+	        throw new IllegalArgumentException("新密碼不可與目前密碼相同");
+	    }
+
+	    // 5. BCrypt 加密後儲存
+	    employee.setEmpPassword(passwordEncoder.encode(newPassword));
+
+	    // 6. 標記已完成首次密碼修改
+	    employee.setEmpPwdChanged(true);
+	    employee.setEmpTempPasswordExpiresAt(null);
+
+	    // 7. 更新資料庫
+	    employeeRepository.save(employee);
+	}
+
+	// 查詢所有員工
+	public List<EmployeeVO> getAllEmployees() {
+		return employeeRepository.findAll();
+	}
+
+	// 根據員工編號查詢
+	public Optional<EmployeeVO> getEmployeeById(Integer empNo) {
+		return employeeRepository.findById(empNo);
+	}
+
+	// 查詢指定員工擁有的權限編號
+	public List<Integer> getEmployeePermissions(Integer empNo) {
+
+		return employeePermissionRepository.findByEmployee_EmpNo(empNo).stream().map(ep -> ep.getIds().getPermNo())
+				.toList();
+	}
+	
+	// 判斷指定員工是否擁有某項權限
+	@Transactional(readOnly = true)
+	public boolean hasPermission(Integer empNo, Integer permNo) {
+
+	    if (empNo == null || permNo == null) {
+	        return false;
+	    }
+
+	    return employeeRepository.findById(empNo)
+	            .filter(emp -> "1".equals(emp.getEmpStatus()))
+	            .isPresent()
+	            && employeePermissionRepository
+	                    .existsByIdsEmpNoAndIdsPermNo(empNo, permNo);
+	}
+
+	// 修改指定員工的權限
+	@Transactional
+	public void updateEmployeePermissions(Integer empNo, List<Integer> permNos) {
+
+		// 1. 確認員工存在
+		EmployeeVO employee = employeeRepository.findById(empNo)
+				.orElseThrow(() -> new IllegalArgumentException("找不到員工：" + empNo));
+
+		// 停用員工不可修改權限
+		if ("2".equals(employee.getEmpStatus())) {
+			throw new IllegalArgumentException("此員工已停用，無法修改權限");
+		}
+
+		// 2. 確認傳入的權限清單有效
+		if (permNos == null || permNos.contains(null)) {
+			throw new IllegalArgumentException("權限資料不可為 null");
+		}
+
+		Set<Integer> uniquePermNos = new HashSet<>(permNos);
+
+		// 3. 確認所有權限編號都存在
+		List<PermissionVO> permissions = permissionRepository.findAllById(uniquePermNos);
+
+		if (permissions.size() != uniquePermNos.size()) {
+			throw new IllegalArgumentException("包含不存在的權限編號");
+		}
+
+		// 4. 取得員工目前的權限集合
+		Set<EmployeePermissionVO> employeePermissions = employee.getEmployeepermissions();
+
+		// 5. 移除這次沒有勾選的權限
+		employeePermissions.removeIf(ep -> !uniquePermNos.contains(ep.getIds().getPermNo()));
+
+		// 6. 新增原本沒有的權限
+		for (PermissionVO permission : permissions) {
+
+			Integer permNo = permission.getPermNo();
+
+			boolean exists = employeePermissions.stream().anyMatch(ep -> ep.getIds().getPermNo().equals(permNo));
+
+			if (!exists) {
+				EmployeePermissionVO ep = new EmployeePermissionVO();
+
+				ep.setIds(new EmployeePermissionId(empNo, permNo));
+				ep.setEmployee(employee);
+				ep.setPermission(permission);
+
+				employeePermissions.add(ep);
+			}
+		}
+
+		// 7. 儲存員工權限
+		employeeRepository.save(employee);
+	}
+	
+	// 員工自行修改個人資料
+	@Transactional
+	public void updateMyProfile(Integer empNo, String empIce,
+	                            String empIcetel, String empAdd) {
+
+	    // 依登入員工編號取得資料
+	    EmployeeVO employee = employeeRepository.findById(empNo)
+	            .orElseThrow(() -> new IllegalArgumentException("找不到員工"));
+
+	    // 停用員工不可修改資料
+	    if (!"1".equals(employee.getEmpStatus())) {
+	        throw new IllegalArgumentException("此員工已停用");
+	    }
+
+	    // 只允許修改緊急聯絡人、緊急聯絡電話、地址
+	    employee.setEmpIce(empIce);
+	    employee.setEmpIcetel(empIcetel);
+	    employee.setEmpAdd(empAdd);
+
+	    employeeRepository.save(employee);
+	}
+
+	// 修改員工資料
+	@Transactional
+	public EmployeeVO updateEmployee(Integer empNo, EmployeeVO data) {
+
+		EmployeeVO employee = employeeRepository.findById(empNo)
+				.orElseThrow(() -> new IllegalArgumentException("找不到員工：" + empNo));
+
+		// 停用員工不可修改資料
+		if ("2".equals(employee.getEmpStatus())) {
+			throw new IllegalArgumentException("此員工已停用，無法修改資料");
+		}
+
+		String email = validateEmail(data.getEmpEmail());
+		employee.setEmpName(data.getEmpName());
+		employee.setEmpEmail(email);
+		employee.setEmpTel(data.getEmpTel());
+		employee.setEmpIce(data.getEmpIce());
+		employee.setEmpIcetel(data.getEmpIcetel());
+		employee.setEmpAdd(data.getEmpAdd());
+		employee.setEmpSal(data.getEmpSal());
+
+		return employeeRepository.save(employee);
+	}
+
+	private String validateEmail(String value) {
+	    if (value == null || value.isBlank() || value.length() > 254
+	            || !value.trim().matches("^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\\.[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)+$")) {
+	        throw new IllegalArgumentException("請輸入正確的員工 Email，並先儲存後再寄送臨時密碼");
+	    }
+	    return value.trim();
+	}
+
+	// 停用員工
+	@Transactional
+	public void disableEmployee(Integer empNo) {
+
+		EmployeeVO employee = employeeRepository.findById(empNo)
+				.orElseThrow(() -> new IllegalArgumentException("找不到員工：" + empNo));
+
+		employee.setEmpStatus("2");
+
+		employeeRepository.save(employee);
+	}
+
+	// 取消停用員工（恢復在職）
+	@Transactional
+	public EmployeeVO enableEmployee(Integer empNo, String temporaryPassword) {
+
+		// 鎖定目標列，避免重複解除停用同時產生兩組臨時密碼。
+		EmployeeVO employee = employeeRepository.findForReactivation(empNo)
+				.orElseThrow(() -> new java.util.NoSuchElementException("找不到員工：" + empNo));
+
+		if (!"2".equals(employee.getEmpStatus())) {
+			throw new IllegalStateException("此員工已非停用狀態，請重新整理列表；需要補寄請使用忘記密碼");
+		}
+		// 信箱問題不阻止復職，讓主管可編輯補正後再重設密碼寄信。
+		employee.setEmpPassword(passwordEncoder.encode(temporaryPassword));
+		employee.setEmpPwdChanged(false);
+		employee.setEmpTempPasswordExpiresAt(java.time.Instant.now().plus(java.time.Duration.ofHours(24)));
+		employee.setEmpStatus("1");
+
+		return employeeRepository.save(employee);
+	}
+
+	// 上傳或更換員工照片
+	@Transactional
+	public void updateEmployeePhoto(Integer empNo, byte[] photo) {
+
+		EmployeeVO employee = employeeRepository.findById(empNo)
+				.orElseThrow(() -> new IllegalArgumentException("找不到員工：" + empNo));
+
+		// 停用員工不可更換照片
+		if ("2".equals(employee.getEmpStatus())) {
+			throw new IllegalArgumentException("此員工已停用，無法修改照片");
+		}
+
+		employee.setEmpPhoto(photo);
+
+		employeeRepository.save(employee);
+	}
+
+	// 查詢員工照片
+	@Transactional(readOnly = true)
+	public byte[] getEmployeePhoto(Integer empNo) {
+
+		EmployeeVO employee = employeeRepository.findById(empNo)
+				.orElseThrow(() -> new IllegalArgumentException("找不到員工：" + empNo));
+
+		return employee.getEmpPhoto();
+	}
+
+	// 刪除員工照片
+	@Transactional
+	public void deleteEmployeePhoto(Integer empNo) {
+
+		// 1. 確認員工存在
+		EmployeeVO employee = employeeRepository.findById(empNo)
+				.orElseThrow(() -> new IllegalArgumentException("找不到員工：" + empNo));
+
+		// 2. 停用員工不可修改照片
+		if ("2".equals(employee.getEmpStatus())) {
+			throw new IllegalArgumentException("此員工已停用，無法刪除照片");
+		}
+
+		// 3. 清除員工照片
+		employee.setEmpPhoto(null);
+
+		// 4. 更新資料庫
+		employeeRepository.save(employee);
+	}
+
+}

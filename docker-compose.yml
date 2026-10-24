@@ -7,8 +7,12 @@ services:
       MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:?請在 .env 設定 DB_PASSWORD}
     ports:
       - "${MYSQL_PORT:-13306}:3306"
+    # 中文用 utf8mb4，避免亂碼
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     volumes:
       - ./mysql_data:/var/lib/mysql
+      # 第一次建立資料庫（mysql_data 是空的）時，自動執行建表＋測試資料；之後不會再執行
+      - ./src/main/java/資料庫表格建立/createTable_v1_6.sql:/docker-entrypoint-initdb.d/01-createTable.sql:ro
 
   redis:
     image: redis:7
@@ -43,6 +47,19 @@ services:
       DB_PORT: 3306
       DB_USERNAME: ${DB_USERNAME:?請在 .env 設定 DB_USERNAME}
       DB_PASSWORD: ${DB_PASSWORD:?請在 .env 設定 DB_PASSWORD}
+      REDIS_HOST: redis
+      # 綠界刷卡、候位 QR Code（application-docker.properties 讀這些環境變數）
+      ECPAY_MERCHANT_ID: ${ECPAY_MERCHANT_ID:?請在 .env 設定 ECPAY_MERCHANT_ID}
+      ECPAY_HASH_KEY: ${ECPAY_HASH_KEY:?請在 .env 設定 ECPAY_HASH_KEY}
+      ECPAY_HASH_IV: ${ECPAY_HASH_IV:?請在 .env 設定 ECPAY_HASH_IV}
+      ECPAY_PAY_URL: ${ECPAY_PAY_URL:?請在 .env 設定 ECPAY_PAY_URL}
+      ECPAY_RETURN_URL: ${ECPAY_RETURN_URL:?請在 .env 設定 ECPAY_RETURN_URL}
+      WAITING_JOIN_URL: ${WAITING_JOIN_URL:?請在 .env 設定 WAITING_JOIN_URL}
+      # 員工 Email（新增員工、恢復在職時寄臨時密碼）：沒填就不寄信，程式照常啟動
+      EMPLOYEE_MAIL_USERNAME: ${EMPLOYEE_MAIL_USERNAME:-}
+      EMPLOYEE_MAIL_PASSWORD: ${EMPLOYEE_MAIL_PASSWORD:-}
+      EMPLOYEE_MAIL_FROM: ${EMPLOYEE_MAIL_FROM:-}
+      EMPLOYEE_LOGIN_URL: ${EMPLOYEE_LOGIN_URL:-http://localhost:18088/staff/login}
     depends_on:
       - mysql
       - redis

@@ -2,9 +2,8 @@ package com.bistroops.permission.model;
 
 import java.util.Set;
 
-import com.bistroops.employeepermission.model.EmployeePermissionVO;
-
-import jakarta.persistence.CascadeType;
+import com.bistroops.employee.model.EmployeePermissionVO;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -13,56 +12,50 @@ import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "permission")
-public class PermissionVO implements java.io.Serializable {
-	
-	@Id
-	@Column(name = "perm_no")
-	private Integer permNo;
-	
-	@Column(name = "perm_exp")
-	private String permExp;
-	
-	@OneToMany(mappedBy = "permission" ,cascade = CascadeType.ALL)
-	private Set<EmployeePermissionVO> employeepermissions;
-	
-	
+public class PermissionVO {
 
-	public PermissionVO() {
-		super();
-		// TODO Auto-generated constructor stub
-	}
+    @Id
+    @Column(name = "perm_no")
+    private Integer permNo;
 
-	public Integer getPermNo() {
-		return permNo;
-	}
+    @Column(name = "perm_exp")
+    private String permExp;
 
-	public void setPermNo(Integer permNo) {
-		this.permNo = permNo;
-	}
+    @JsonIgnore
+    @OneToMany(mappedBy = "permission")
+    private Set<EmployeePermissionVO> employeepermissions;
 
-	public String getPermExp() {
-		return permExp;
-	}
+    public PermissionVO() {
+    }
 
-	public void setPermExp(String permExp) {
-		this.permExp = permExp;
-	}
+    public Integer getPermNo() {
+        return permNo;
+    }
 
-	public Set<EmployeePermissionVO> getEmployeepermissions() {
-		return employeepermissions;
-	}
+    public void setPermNo(Integer permNo) {
+        this.permNo = permNo;
+    }
 
-	public void setEmployeepermissions(Set<EmployeePermissionVO> employeepermissions) {
-		this.employeepermissions = employeepermissions;
-	}
+    public String getPermExp() {
+        return permExp;
+    }
 
-		@Override
-	public String toString() {
-		return "PermissionVO [permNo=" + permNo + ", permExp=" + permExp + "]";
-	}
+    public void setPermExp(String permExp) {
+        this.permExp = permExp;
+    }
 
+    public Set<EmployeePermissionVO> getEmployeepermissions() {
+        return employeepermissions;
+    }
 
-	
+    public void setEmployeepermissions(
+            Set<EmployeePermissionVO> employeepermissions) {
+        this.employeepermissions = employeepermissions;
+    }
 
-
+    @Override
+    public String toString() {
+        return "PermissionVO [permNo=" + permNo
+                + ", permExp=" + permExp + "]";
+    }
 }

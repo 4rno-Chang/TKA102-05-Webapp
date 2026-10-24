@@ -1,0 +1,41 @@
+/* =========================================================
+   Bistroops 員工後台：主頁（staff_index.html）
+   需要先載入 staff.css（使用它的 --st-* 變數，以及 .staff-card、.staff-btn、.home-tile）
+   大按鈕（.home-tile）公告管理也會用到，所以寫在 staff.css；這裡只放主頁才有的東西。
+   ========================================================= */
+
+
+/* 最下面的工作備忘錄：上面一行小字標題，下面是填寫框，右下角顯示「已儲存」 */
+/*   標題列：左邊「工作備忘錄」，右邊灰色小字說明怎麼存；畫面太窄時小字換到下一行 */
+.home-note-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px 12px; margin-bottom: 8px; }
+.home-note-label { color: var(--st-muted); font-size: 14px; }
+.home-note-hint { color: var(--st-muted); font-size: 13px; }
+.home-note-input {
+  display: block; width: 100%;
+  padding: 12px 16px;
+  background: var(--st-card);
+  border: 1px solid var(--st-border);
+  border-radius: 12px;
+  font: inherit; font-size: 16px; line-height: 1.7;
+  resize: vertical;
+}
+.home-note-input:focus { outline: 2px solid var(--st-yellow); outline-offset: 1px; }
+.home-note-status { min-height: 1.5em; margin-top: 6px; color: var(--st-muted); font-size: 13px; text-align: right; }
+
+/* 訂候位管理的長條：左邊標題、中間兩個數字、最右邊箭頭；整條都可以點 */
+.home-bar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 28px;
+  width: 100%; min-height: 84px;
+  margin-bottom: 22px;
+  border-left: 5px solid var(--st-yellow);
+  text-align: left;
+  transition: transform .2s, box-shadow .2s;
+}
+.home-bar:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(90, 60, 30, .12); }
+.home-bar:active { transform: scale(.99); }
+.home-bar-title { font-family: var(--st-serif); font-size: 22px; font-weight: 700; }
+.home-bar-stats { flex: 1; display: flex; flex-wrap: wrap; gap: 4px 28px; color: var(--st-muted); }
+.home-bar-stat strong { color: var(--st-text); }
+/* 組數：放大的磚紅色數字 */
+.home-bar-stat .home-bar-num { margin: 0 2px; color: var(--st-red); font-family: var(--st-serif); font-size: 26px; }
+.home-bar-arrow { color: var(--st-red); font-size: 30px; line-height: 1; }

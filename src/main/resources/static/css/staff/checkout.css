@@ -1,0 +1,215 @@
+/* =========================================================
+   Bistroops 員工後台：結帳（checkout.html）
+   需要先載入 staff.css（使用它的 --st-* 變數，以及 .staff-card、.staff-btn、.badge、.tag、.receipt-table）
+   ========================================================= */
+
+
+/* 左：訂單清單　右：餐點明細 */
+.checkout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.checkout-row {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--st-border);
+  border-radius: 14px;
+}
+.checkout-row + .checkout-row { margin-top: 10px; }
+/* 目前正在看明細的那一列 */
+.checkout-row.selected { background: #fbeee9; border-color: var(--st-red); }
+.checkout-row-info { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; min-width: 0; }
+.checkout-row-id { color: var(--st-muted); font-size: 14px; }
+.checkout-row-amount { font-family: var(--st-serif); font-size: 18px; font-weight: 700; }
+
+/* 餐點明細 */
+/* 左右兩欄各自的外框：裡面的卡片由上到下排 */
+.checkout-col { display: grid; gap: 20px; align-content: start; min-width: 0; }
+/* 右欄：頁面往下捲的時候停在畫面上方 */
+.checkout-col-receipt { position: sticky; top: 20px; }
+.receipt-empty { padding: 90px 0; color: var(--st-muted); text-align: center; }
+.receipt-body { position: relative; }
+.receipt-close {
+  display: grid; place-items: center;   /* 用連結（a）當關閉鈕時，× 也會在正中間 */
+  position: absolute; top: -8px; right: -8px;
+  width: 48px; height: 48px;
+  background: none; border: 0; border-radius: 50%;
+  color: var(--st-red);
+  font-size: 32px; line-height: 1;
+}
+.receipt-close:hover { background: var(--st-soft); }
+.receipt-top { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; padding-right: 44px; }
+.receipt-title { margin-left: 6px; color: var(--st-muted); font-size: 18px; font-weight: 500; }
+.receipt-meta { color: var(--st-muted); font-size: 14px; }
+
+.receipt-sum { margin-top: 14px; padding-top: 12px; border-top: 2px solid var(--st-text); }
+.receipt-sum div { display: flex; justify-content: space-between; padding: 3px 6px; }
+.receipt-sum dd { font-weight: 500; }
+.receipt-pay { margin-top: 6px; font-size: 20px; font-weight: 700; }
+.receipt-pay dd { color: var(--st-red); font-family: var(--st-serif); font-size: 26px; font-weight: 700; }
+
+.receipt-warn {
+  margin-top: 12px; padding: 8px 14px;
+  background: #f8e7c4;
+  border-radius: 10px;
+  color: #8a5e10;
+  font-size: 14px;
+}
+.receipt-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px; }
+.receipt-actions .staff-btn { min-width: 104px; min-height: 54px; font-size: 18px; font-weight: 700; }
+
+
+/* ========== 直立的平板與較窄的畫面（900px 以下） ========== */
+@media (max-width: 900px) {
+  /* 結帳：清單佔滿，餐點明細改成蓋在畫面上的整頁視窗（選了訂單才出現） */
+  .checkout { grid-template-columns: 1fr; }
+  .receipt { display: none; }
+  .receipt.open {
+    display: block;
+    position: fixed; inset: 0; z-index: 2000;
+    border: 0; border-radius: 0;
+    overflow-y: auto;
+  }
+  .receipt-close { top: 0; right: 0; }
+}
+
+
+/* ========== 手機（640px 以下） ========== */
+@media (max-width: 640px) {
+  .checkout-row { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .checkout-row-amount { grid-column: 2; text-align: right; }
+  .checkout-row-info { grid-column: 1 / -1; grid-row: 2; }
+  .receipt-actions .staff-btn { flex: 1; min-width: 0; }
+}
+
+
+/* 回饋 QR 對話框（staff.css 的 * { margin: 0 } 會讓 dialog 不置中，要補 margin: auto） */
+.qr-dialog { position: fixed; margin: auto; padding: 22px 24px; width: min(360px, 92vw); text-align: center;
+             background: var(--st-card); border: 1px solid var(--st-border);
+             border-radius: var(--st-radius); box-shadow: var(--st-shadow); }
+.qr-dialog::backdrop { background: rgba(59, 47, 42, .45); }
+.qr-close { position: absolute; top: 8px; right: 12px; border: none; background: none;
+            font-size: 26px; line-height: 1; color: var(--st-muted); cursor: pointer; }
+.qr-close:hover { opacity: .6; }
+.qr-meta { color: var(--st-muted); font-size: 14px; }
+.qr-box { display: flex; justify-content: center; margin: 16px 0; }
+.qr-tip { margin-bottom: 14px; color: var(--st-muted); font-size: 13px; }
+.qr-actions { text-align: center; }
+/* 回饋 QR 按鈕：大小和刷卡、現金一樣（尺寸由上面的 .receipt-actions .staff-btn 決定）
+   顏色用深咖啡色（--st-text），和刷卡的綠、現金的黃、結帳的紅區分開
+   margin-top、width 要歸零，蓋掉 staff.css 裡 .btn-feedback-qr 的 width: 100% */
+.receipt-actions .btn-feedback-qr {
+  margin-top: 0; width: auto;
+  background: var(--st-text); border-color: var(--st-text); color: var(--st-card);
+}
+.receipt-actions .btn-feedback-qr:hover { background: #54443c; border-color: #54443c; }
+
+/* 會員：輸入手機號碼的對話框（外框和 QR 對話框一樣） */
+.member-dialog { position: fixed; margin: auto; padding: 22px 24px; width: min(380px, 92vw); text-align: center;
+                 background: var(--st-card); color: var(--st-text); border: 1px solid var(--st-border);
+                 border-radius: var(--st-radius); box-shadow: var(--st-shadow); }
+.member-dialog::backdrop { background: rgba(59, 47, 42, .45); }
+.member-close { position: absolute; top: 8px; right: 12px; border: none; background: none;
+                font-size: 26px; line-height: 1; color: var(--st-muted); cursor: pointer; }
+.member-close:hover { opacity: .6; }
+.member-label { display: block; margin: 18px 0 6px; color: var(--st-muted); font-size: 14px; text-align: left; }
+.member-input { width: 100%; height: 54px; padding: 0 14px;
+                background: #fff; border: 1px solid var(--st-border); border-radius: 12px;
+                font-size: 22px; letter-spacing: 2px; text-align: center; }
+.member-input:focus { outline: none; border-color: var(--st-text); }
+/* 這張訂單目前的會員（徽章 + 名稱） */
+.member-current { display: flex; justify-content: center; align-items: center; gap: 8px;
+                  margin-top: 8px; color: var(--st-muted); font-size: 14px; }
+.member-current strong { color: var(--st-text); font-size: 16px; }
+
+/* 查詢結果：查詢中是灰色，找到會員是綠色，查無此會員是紅色 */
+.member-result { margin-top: 14px; padding: 10px 14px;
+                 background: var(--st-soft); border-radius: 12px;
+                 color: var(--st-muted); font-size: 16px; font-weight: 500; }
+.member-result.is-found { background: #eef1e6; color: #5f6b45; }
+.member-result.is-found strong { color: var(--st-text); font-size: 18px; }
+.member-result.is-error { background: #fbeee9; color: var(--st-red); }
+.btn-member-submit:disabled { opacity: .4; cursor: not-allowed; }
+.btn-member-submit:disabled:hover { background: var(--st-text); border-color: var(--st-text); }
+.member-error { margin-top: 8px; color: var(--st-red); font-size: 14px; text-align: left; }
+.member-actions { display: flex; gap: 12px; margin-top: 20px; }
+.member-actions .staff-btn { flex: 1; }
+.btn-member-submit { background: var(--st-text); border-color: var(--st-text); color: var(--st-card); }
+.btn-member-submit:hover { background: #54443c; border-color: #54443c; }
+
+/* 提示對話框（取代 alert）：和 feedback.css 的「查看」對話框同樣的外框、標題線、虛線 */
+.msg-dialog { margin: auto; padding: 22px 24px; width: min(420px, 92vw);
+              background: var(--st-card); color: var(--st-text);
+              border: 1px solid var(--st-border); border-radius: var(--st-radius); box-shadow: var(--st-shadow); }
+.msg-dialog::backdrop { background: rgba(59, 47, 42, .45); }
+.msg-dialog .dlg-head { padding-bottom: 10px; border-bottom: 2px solid var(--st-text);
+                        font-size: 18px; font-weight: 700; }
+.msg-dialog .dlg-body { padding: 14px 6px; border-bottom: 1px dashed var(--st-border);
+                        white-space: pre-wrap; word-break: break-word; }
+.msg-dialog .dlg-foot { padding-top: 14px; text-align: right; }
+
+/* 列印時只印對話框內容，隱藏按鈕 */
+@media print {
+  body * { visibility: hidden; }
+  #qrDialog, #qrDialog * { visibility: visible; }
+  #qrDialog { position: absolute; top: 0; left: 0; border: none; box-shadow: none; }
+  .no-print { display: none !important; }
+}
+
+
+/* ========== 整單折扣（明細下方的那一行、#promoteDialog 對話框；程式在 staff.js 的 A-10） ========== */
+/* 明細表格下方、總金額上方的那一行：左邊「整單折扣」，接著活動名稱、幾折、折掉的金額，最右邊是按鈕 */
+.promo-line {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px;
+  margin-top: 12px; padding: 10px 6px;
+  border-top: 1px dashed var(--st-border);
+}
+.promo-line-label { color: var(--st-muted); font-size: 14px; }
+/* 明細表格最後一列的整單折扣
+   和上面品項之間兩條虛線：一條是上一列原本的底線，另一條用背景畫在這一列頂端往下 4px 的地方
+   和下面「整單折扣」那一行之間一條虛線：這一列不要底線，只留 .promo-line 的上框線
+   上下置中：上面從第二條虛線（4px）算起留 12px、下面 .promo-line 的 margin-top 已有 12px，所以下方不留 padding */
+.receipt-table .promo-row td {
+  border-bottom: none;
+  padding-top: 16px;
+  padding-bottom: 0;
+  font-weight: 700;
+  background: repeating-linear-gradient(to right, var(--st-border) 0 3px, transparent 3px 6px) left top 4px / 100% 1px no-repeat;
+}
+/* 數量＋單價合併的格子：置中 */
+.receipt-table .promo-row-zhe { color: var(--st-red); text-align: center; }
+.promo-line-none { color: var(--st-muted); }
+.promo-line .staff-btn,
+.promo-line-form { margin-left: auto; }
+.promo-line .staff-btn { min-width: 0; min-height: 40px; padding: 0 16px; font-size: 15px; }
+.promo-line-form .staff-btn { margin-left: 0; }
+
+/* 對話框（外觀和會員的對話框相同） */
+.promo-dialog {
+  position: fixed; margin: auto;   /* 一定要 fixed（瀏覽器原本的設定）：寫 relative 的話，打開對話框時畫面會被拉到最上面 */
+  width: min(440px, 92vw); padding: 22px 24px;
+  border: none; border-radius: var(--st-radius);
+  background: var(--st-card); color: var(--st-text);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, .2);
+}
+.promo-dialog::backdrop { background: rgba(59, 47, 42, .45); }
+.promo-dialog-tip { margin: 4px 0 14px; color: var(--st-muted); font-size: 14px; }
+
+/* 每個活動一列：左邊 radio，右邊名稱、幾折、條件；選到的那一列變成黃框 */
+.promo-options { display: grid; gap: 8px; max-height: 50vh; overflow-y: auto; }
+.promo-option {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--st-border); border-radius: 12px;
+  cursor: pointer;
+}
+.promo-option:has(input:checked) { border-color: var(--st-yellow); background: #fdf6e7; }
+.promo-option input { flex: none; width: 20px; height: 20px; margin-top: 2px; accent-color: var(--st-red); }
+.promo-option-body { display: grid; gap: 2px; min-width: 0; }
+.promo-option-head { display: flex; align-items: baseline; gap: 10px; }
+.promo-option-zhe { color: var(--st-red); font-weight: 700; }
+.promo-option small { color: var(--st-muted); font-size: 13px; overflow-wrap: anywhere; }
+.promo-empty { padding: 16px; color: var(--st-muted); text-align: center; }

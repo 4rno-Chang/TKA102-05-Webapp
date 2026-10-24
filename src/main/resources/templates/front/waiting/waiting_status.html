@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Bistroops｜當日候位</title>
+
+<link rel="icon" th:href="@{/images/logo-mark.svg}" type="image/svg+xml">
+
+<link rel="stylesheet" th:href="@{/css/front/front.css}">
+<link rel="stylesheet" th:href="@{/css/front/member.css}">
+<link rel="stylesheet" th:href="@{/css/front/waiting.css}">
+<link rel="stylesheet" th:href="@{/css/front/booking-loading.css}">
+
+<script th:src="@{/js/front/member.js}" defer></script>
+<script th:src="@{/js/front/announcement.js}" defer></script>
+<script th:src="@{/js/front/booking-loading.js}" defer></script>
+<script th:src="@{/js/front/waiting.js}" defer></script>
+</head>
+
+<body>
+	<div th:replace="~{front/member/member_modals :: modals}"></div>
+	<header th:replace="~{front/front_layout :: header('waiting')}"></header>
+
+	<main class="booking">
+		<div class="container">
+
+			<header class="booking-head">
+				<p class="eyebrow">Waiting List</p>
+
+				<h1 class="booking-title" th:text="${manage} ? '候位管理測試' : '當日候位'">
+				</h1>
+
+				<p class="booking-lead">2／4／6 人桌分開取號，人工叫號後一分鐘未報到自動過號。</p>
+			</header>
+
+			<p class="form-msg error" th:if="${error != null}" th:text="${error}">
+			</p>
+
+			<p class="form-msg" th:if="${message != null}" th:text="${message}">
+			</p>
+			
+			<!-- 電話查詢：說明下方、候位服務狀態上方 -->
+<section class="waiting-lookup"
+         aria-label="查詢當日候位"
+         th:if="${not manage}">
+
+    <!-- 排法和預約訂位的「查詢訂位」相同：標題在上，輸入框和按鈕同一排 -->
+    <form th:action="@{/bistroops/waiting}"
+          method="get" data-loading>
+
+        <label for="lookupPhone" class="waiting-lookup-label">候位電話</label>
+
+        <div class="waiting-lookup-row">
+            <input type="tel"
+                   id="lookupPhone"
+                   name="lookupPhone"
+                   pattern="09[0-9]{8}"
+                   minlength="10"
+                   maxlength="10"
+                   inputmode="numeric"
+                   autocomplete="tel"
+                   placeholder="請輸入候位電話"
+                   required
+                   th:value="${lookupPhone}">
+
+            <button type="submit" class="btn-outline">查詢候位號碼</button>
+        </div>
+    </form>
+
+    <div class="waiting-lookup-results"
+         th:if="${lookupPerformed}">
+
+        <p th:if="${#lists.isEmpty(lookupTickets)}">
+            查無當日候位資料。
+        </p>
+
+        <article class="record-item"
+                 th:each="t : ${lookupTickets}">
+            <p th:text="|號碼：${t.number}|"></p>
+            <p th:text="|桌型：${t.tableType} 人桌|"></p>
+            <p th:text="|狀態：${t.statusText}|"></p>
+
+            <p th:if="${t.status == 'MISSED'}">
+                請回到店門口重新掃描 QR Code 取號。
+            </p>
+        </article>
+    </div>
+</section>
+
+			<section class="waiting-bar" th:classappend="${!open} ? 'is-closed'">
+				<div>
+					<p class="waiting-bar-title"
+						th:text="${open}
+                           ? '候位服務可用'
+                           : '候位服務暫時無法使用，請洽現場人員'">
+					</p>
+
+					<p class="waiting-bar-time">
+						最後更新： <span th:text="${refreshTime}"></span>
+					</p>
+				</div>
+
+				<button type="button" class="btn-outline"
+					onclick="location.reload()">重新整理</button>
+			</section>
+
+			<section class="queue-grid" id="queueGrid" data-auto-refresh="true">
+
+				<article class="queue-card" th:each="q : ${queues}">
+					<h2 class="queue-head" th:text="|${q.tableType} 人桌|"></h2>
+
+					<div class="queue-body">
+						<p class="queue-label">已叫號，等待報到</p>
+
+						<p class="queue-no" th:if="${#lists.isEmpty(q.notifiedNumbers)}">
+							—</p>
+
+						<p class="queue-no" th:each="number : ${q.notifiedNumbers}"
+							th:text="${number}"></p>
+
+						<p class="queue-info">
+							尚未結束的候位： <strong th:text="${q.waitingCount}"></strong> 組
+						</p>
+
+						<form th:if="${manage and open}"
+							th:action="@{/bistroops/waiting/manage/action}" method="post" data-loading=".queue-card">
+
+							<input type="hidden" name="operation" value="NOTIFY"> <input
+								type="hidden" name="tableType" th:value="${q.tableType}">
+
+							<input type="hidden" name="waitingCsrfToken"
+								th:value="${waitingCsrfToken}">
+
+							<button type="submit" class="btn-outline">叫下一號</button>
+						</form>
+					</div>
+				</article>
+			</section>
+
+			
+
+			<!-- 已登入員工的管理清單 -->
+			<section class="booking-card" th:if="${manage}">
+				<h2 class="booking-card-title">當日候位資料</h2>
+
+				<p th:if="${#lists.isEmpty(staffTickets)}">目前沒有當日候位資料。</p>
+
+				<article class="record-item" th:each="t : ${staffTickets}">
+
+					<h3 th:text="|${t.number}｜${t.statusText}|"></h3>
+					<p th:text="|電話：${t.phone}|"></p>
+
+					<p th:if="${!#strings.isEmpty(t.name)}" th:text="|姓名：${t.name}|">
+					</p>
+
+					<p class="waiting-note" th:text="|備註：${t.note}|"></p>
+
+					<form th:if="${t.active}"
+						th:action="@{/bistroops/waiting/manage/action}" method="post"
+						data-confirm="確定執行所選候位操作嗎？" data-loading=".record-item">
+
+						<input type="hidden" name="tableType" th:value="${t.tableType}">
+
+						<input type="hidden" name="ticketId" th:value="${t.ticketId}">
+
+						<input type="hidden" name="waitingCsrfToken"
+							th:value="${waitingCsrfToken}">
+
+						<div class="field">
+							<label>操作</label> <select name="operation">
+								<option value="SEAT" th:if="${t.status == 'NOTIFIED'}">
+									標記已入座</option>
+
+								<option value="MISS" th:if="${t.status == 'NOTIFIED'}">
+									人工過號</option>
+
+								<option value="COMMENT">修改備註</option>
+								<option value="CANCEL">取消候位</option>
+							</select>
+						</div>
+
+						<div class="field">
+							<label>備註（選擇修改備註時才會儲存）</label>
+
+							<textarea name="note" maxlength="20" rows="2" th:text="${t.note}"></textarea>
+						</div>
+
+						<button type="submit" class="btn-outline">執行操作</button>
+					</form>
+				</article>
+			</section>
+
+			<section class="booking-rules">
+				<h2 class="booking-rules-title">候位須知</h2>
+
+				<ul>
+					<li>電話必填，姓名選填，不需要登入會員。</li>
+					<li>同一電話在同一桌型只能持有一張有效號碼牌。</li>
+					<li>人工叫號後一分鐘未報到，自動過號。</li>
+					<li>過號後請回店門口重新掃描 QR Code 取號。</li>
+					<li>所有號碼於台灣時間午夜 00:00 失效。</li>
+				</ul>
+			</section>
+
+		</div>
+	</main>
+
+	<footer th:replace="~{front/front_layout :: footer}"></footer>
+</body>
+</html>

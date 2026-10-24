@@ -1,45 +1,61 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head>
-<meta charset="UTF-8">
-<title>公告列表</title>
-</head>
+<html lang="zh-Hant" xmlns:th="http://www.thymeleaf.org">
+
+<!-- 公告列表（片段）
+     由外殼 staff/announcement-and-qa.html 在 tab 不是 'qa' 時 include 進來，這個檔案不會單獨顯示。
+     annList：AnnouncementController 放入的所有公告（包含還沒開始的）
+     樣式在 staff-announcement.css（外殼的 <head> 已載入） -->
 <body>
-	<h1>公告列表</h1>
-	<table style="width: 50%; text-align: center;">
-		<tr>
-			<th>公告編號</th>
-			<th>公告標題</th>
-			<th>公告時間</th>
-			<th>推播圖</th>
-			<th>文字內容</th>
-		</tr>
-		<tr th:each="ann : ${annList}">
-			<td th:text="${ann.annNo}"></td>
-			<td th:text="${ann.annTitle}"></td>
-			<td th:text="${#temporals.format(ann.annBegin, 'yyyy-MM-dd HH:mm')}"></td>
-			<td>
-				<img th:if="${ann.annImg != null}" th:src="@{/staff/announcement/image/{no}(no=${ann.annNo})}"
-					th:alt="${ann.annTitle}">
-			</td>
-			<td th:text="${ann.annText}"></td>
-			<td>
-				<form th:action="@{/staff/announcement/update/{no}(no=${ann.annNo})}" method="get">
-					<button type="submit">修改公告</button>
-				</form>
-			</td>
-			<td>
-				<form th:action="@{/staff/announcement/delete/{no}(no=${ann.annNo})}" method="post">
-					<button type="submit">刪除公告</button>
-				</form>
-			</td>
-		</tr>
-	</table>
+  <div th:fragment="content">
+    <div class="ann-toolbar">
+      <p class="ann-count" th:text="|共 ${#lists.size(annList)} 則公告|"></p>
+      <div class="ann-actions">
+        <!-- 編號查詢：送到 /staff/announcement/search?annNo=... -->
+        <form class="ann-search" th:action="@{/staff/announcement/search}" method="get">
+          <input type="number" class="staff-input" name="annNo" min="1" placeholder="公告編號" aria-label="公告編號" required>
+          <button type="submit" class="staff-btn">查詢</button>
+        </form>
+        <a class="staff-btn btn-pay" th:href="@{/staff/announcement/insert}">＋ 新增公告</a>
+      </div>
+    </div>
 
-	<br>
-	<br>
-	<br>
+    <section class="staff-card">
+      <p class="staff-empty" th:if="${#lists.isEmpty(annList)}">目前沒有任何公告</p>
 
-	<a th:href="@{/staff/announcement}">回首頁</a>
+      <ul th:unless="${#lists.isEmpty(annList)}">
+        <!-- scheduled：開始時間還沒到（前台還看不到）→ 顯示「排程中」，否則顯示「已發布」 -->
+        <li class="ann-row" th:each="ann : ${annList}"
+            th:with="scheduled=${ann.annBegin != null and ann.annBegin.isAfter(#temporals.createNow())}">
+          <div class="ann-thumb">
+            <img th:if="${ann.annImg != null}" loading="lazy"
+                 th:src="@{/staff/announcement/image/{no}(no=${ann.annNo})}" th:alt="${ann.annTitle}">
+            <span th:if="${ann.annImg == null}">無圖片</span>
+          </div>
+
+          <div>
+            <p class="ann-meta">
+              <span class="ann-no" th:text="|#${ann.annNo}|"></span>
+              <time th:datetime="${ann.annBegin}"
+                    th:text="${#temporals.format(ann.annBegin, 'yyyy-MM-dd HH:mm')}"></time>
+              <span class="tag tag-yellow" th:if="${scheduled}">排程中</span>
+              <span class="tag tag-green" th:unless="${scheduled}">已發布</span>
+            </p>
+            <h2 class="ann-row-title" th:text="${ann.annTitle}"></h2>
+            <p class="ann-row-text" th:text="${ann.annText}"></p>
+          </div>
+
+          <div class="ann-actions">
+            <a class="staff-btn" th:href="@{/staff/announcement/update/{no}(no=${ann.annNo})}">修改</a>
+            <!-- 刪除要用 POST；th:action 會自動加上 _csrf。送出前先跳確認視窗，按「取消」就不送出 -->
+            <form th:action="@{/staff/announcement/delete/{no}(no=${ann.annNo})}" method="post"
+                  onsubmit="return confirm('確定要刪除這則公告嗎？刪除後無法復原。');">
+              <button type="submit" class="staff-btn btn-danger-outline">刪除</button>
+            </form>
+          </div>
+        </li>
+      </ul>
+    </section>
+  </div>
 </body>
+
 </html>

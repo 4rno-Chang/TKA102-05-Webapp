@@ -1,0 +1,470 @@
+/* =========================================================
+   Bistroops 員工後台：共用樣式（後台每一頁都要載入）
+   風格：溫暖餐飲風　米色底 + 磚紅／芥末黃／鼠尾草綠，圓角卡片
+   以「平板」為主要尺寸設計：按鈕與可點的項目高度都在 48px 以上，方便手指點選。
+   寬螢幕沿用平板的版面；手機（640px 以下）另外調整，寫在最下面。
+   和前台的樣式互不相關，不需要一起載入。
+
+   這個檔案只放「兩個以上的頁面會用到」的東西：
+     變數、Reset、卡片、按鈕、輸入框、徽章與標籤、餐點的分類與備註、圓角按鈕組、餐點明細表格、小提示、
+     左邊選單與版面、大按鈕（磚）。
+   只有某一頁才用到的樣式，寫在那一頁自己的檔案：
+     staff_index.css      主頁　　　　（staff_index.html）
+     workboard.css        工作面板　　（workboard.html）
+     checkout.css         結帳　　　　（checkout.html）
+     orders.css           訂單管理　　（orders.html）
+     promote.css          活動管理　　（promote.html）
+     staff-announcement.css  公告管理（announcement 資料夾裡的頁面）
+
+   新增後台頁面時：HTML 先載入這個檔案，再載入那一頁自己的 CSS（順序不能反過來）
+     <link rel="stylesheet" th:href="@{/css/staff/staff.css}" />
+     <link rel="stylesheet" th:href="@{/css/staff/頁面名稱.css}" />
+   自己的 CSS 可以直接用這裡的變數（var(--st-red) 等）和 .staff-card、.staff-btn 這些共用的 class。
+   ========================================================= */
+
+
+/* ========== 1. 變數 ========== */
+:root {
+  --st-bg: #f7f1e8;          /* 米色底 */
+  --st-card: #fffdf8;        /* 卡片的底色 */
+  --st-soft: #f1e8d9;        /* 比底色深一階：卡片標題列、徽章 */
+  --st-border: #e8dcc9;
+
+  --st-text: #3b2f2a;        /* 深咖啡色文字 */
+  --st-muted: #8c7d70;
+
+  --st-red: #c4533b;         /* 磚紅：主要按鈕、選取中 */
+  --st-red-dark: #a8432e;
+  --st-yellow: #dba03c;      /* 芥末黃：等待送餐、提醒 */
+  --st-green: #8f9c6c;       /* 鼠尾草綠：完成 */
+
+  --st-serif: "Noto Serif TC", Georgia, serif;
+  --st-sans: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+
+  --st-radius: 18px;
+  --st-side-w: 96px;         /* 左邊選單的寬度 */
+  --st-shadow: 0 6px 20px rgba(90, 60, 30, .07);
+}
+
+
+/* ========== 2. Reset 與共用元件 ========== */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--st-bg);
+  color: var(--st-text);
+  font-family: var(--st-sans);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-tap-highlight-color: transparent;   /* 拿掉平板點擊時的藍色閃光 */
+}
+a { color: inherit; text-decoration: none; }
+ul { list-style: none; }
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+/* 有 hidden 屬性的元素一律不顯示（避免被 display: flex 等設定蓋掉） */
+[hidden] { display: none !important; }
+
+.num { text-align: right; }
+
+/* 卡片 */
+.staff-card {
+  padding: 22px 24px;
+  background: var(--st-card);
+  border: 1px solid var(--st-border);
+  border-radius: var(--st-radius);
+  box-shadow: var(--st-shadow);
+}
+.staff-card-title { margin-bottom: 14px; font-size: 18px; font-weight: 700; }
+.staff-empty { padding: 36px 0; color: var(--st-muted); text-align: center; }
+
+/* 按鈕 */
+.staff-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 88px; min-height: 48px;
+  padding: 0 20px;
+  background: var(--st-card);
+  border: 1px solid var(--st-border);
+  border-radius: 12px;
+  font-size: 16px; font-weight: 500;
+  transition: background-color .2s, transform .1s;
+}
+.staff-btn:hover { background: var(--st-soft); }
+.staff-btn:active { transform: scale(.97); }
+.btn-pay { background: var(--st-red); border-color: var(--st-red); color: #fff; }
+.btn-pay:hover { background: var(--st-red-dark); }
+.btn-card { background: var(--st-green); border-color: var(--st-green); color: #fff; }
+.btn-card:hover { background: #7d8a5c; }
+.btn-cash { background: var(--st-yellow); border-color: var(--st-yellow); color: #3b2f2a; }
+.btn-cash:hover { background: #cc912e; }
+
+/* 危險動作的按鈕：外框版（刪除訂單）、實心版（確認刪除） */
+.btn-danger-outline { border-color: var(--st-red); color: var(--st-red); }
+.btn-danger-outline:hover { background: #fbeee9; }
+.btn-danger { background: var(--st-red); border-color: var(--st-red); color: #fff; }
+.btn-danger:hover { background: var(--st-red-dark); }
+.btn-danger:disabled { opacity: .4; cursor: not-allowed; }
+.btn-danger:disabled:hover { background: var(--st-red); }
+
+/* 輸入框 */
+.staff-input {
+  height: 48px;
+  padding: 0 16px;
+  background: var(--st-card);
+  border: 1px solid var(--st-border);
+  border-radius: 12px;
+}
+.staff-input:focus { outline: 2px solid var(--st-yellow); outline-offset: 1px; }
+
+/* 徽章（桌號）與狀態標籤 */
+.badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 52px; height: 36px;
+  padding: 0 12px;
+  background: var(--st-soft);
+  border-radius: 10px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.badge-table { background: var(--st-red); color: #fff; font-weight: 700; }
+
+.tag {
+  display: inline-block;
+  padding: 2px 12px;
+  border-radius: 999px;
+  font-size: 13px; font-weight: 500;
+  white-space: nowrap;
+}
+.tag-red    { background: #f6d9d2; color: #a23e2b; }
+.tag-yellow { background: #f8e7c4; color: #8a5e10; }
+.tag-green  { background: #dfe6cf; color: #4f6037; }
+.tag-gray   { background: #e6dfd5; color: #7a6d62; }
+
+/* 同一頁上下兩大塊之間用虛線隔開（訂候位管理頁在用） */
+.source-block + .source-block { margin-top: 32px; padding-top: 24px; border-top: 2px dashed var(--st-border); }
+
+/* 餐點分類的小標籤（前菜、主菜…） */
+.dish-tag {
+  flex: none;
+  display: inline-block;
+  padding: 1px 8px;
+  background: #6b5d54;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+/* 一道餐點的備註：品名下面的紅色小字（工作面板的卡片、訂單管理的明細） */
+.dish-note {
+  display: inline-block; width: 100%;   /* 自己佔一行；用 inline-block 才不會被「已送達」的刪除線劃到 */
+  color: var(--st-red);
+  font-size: 13px; font-weight: 500;
+}
+.dish-note::before { content: "※ "; }
+
+/* 圓角的按鈕組（訂單管理的狀態篩選、編輯訂單的常用備註） */
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  display: inline-flex; align-items: center;   /* 用連結（a）當按鈕時，文字也會上下置中 */
+  min-height: 48px;
+  padding: 0 20px;
+  background: var(--st-card);
+  border: 1px solid var(--st-border);
+  border-radius: 999px;
+  font-weight: 500;
+  transition: background-color .2s, color .2s;
+}
+.chip:hover { background: var(--st-soft); }
+.chip.active { background: var(--st-text); border-color: var(--st-text); color: #fff; }
+
+/* 餐點明細的表格（結帳的明細、訂單管理展開後的明細） */
+.receipt-table { width: 100%; margin-top: 14px; border-collapse: collapse; }
+.receipt-table th,
+.receipt-table td { padding: 10px 6px; border-bottom: 1px dashed var(--st-border); text-align: left; }
+.receipt-table th { border-bottom: 2px solid var(--st-text); font-size: 14px; }
+.receipt-table .num { text-align: right; white-space: nowrap; }
+.receipt-table .discount { color: var(--st-red); }
+
+/* 小提示 */
+.staff-toast {
+  position: fixed; left: 50%; top: 24px; z-index: 3000;
+  max-width: calc(100% - 40px);
+  padding: 12px 28px;
+  background: var(--st-text);
+  border-radius: 999px;
+  color: #fff;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .2);
+  opacity: 0; pointer-events: none;
+  transform: translate(-50%, -12px);
+  transition: opacity .3s, transform .3s;
+}
+.staff-toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+
+/* 對話框（staff.js A-6 的 staffAlert／staffConfirm）：畫面中上方，一定要按按鈕才會關 */
+.staff-dialog {
+  width: min(380px, calc(100% - 32px));
+  margin: 14vh auto auto;
+  padding: 28px 24px 20px;
+  border: 0;
+  border-top: 5px solid var(--st-yellow);
+  border-radius: var(--st-radius);
+  background: var(--st-card);
+  color: var(--st-text);
+  text-align: center;
+  box-shadow: 0 24px 60px rgba(60, 40, 20, .28);
+  animation: staff-dialog-in .22s ease-out;
+}
+.staff-dialog.is-confirm { border-top-color: var(--st-red); }
+.staff-dialog::backdrop { background: rgba(59, 47, 42, .45); backdrop-filter: blur(2px); }
+.staff-dialog-icon {
+  display: grid; place-items: center;
+  width: 52px; height: 52px; margin: 0 auto 14px;
+  border-radius: 50%;
+  background: #fbefd6;
+  color: var(--st-yellow);
+  font: 700 26px/1 var(--st-serif);
+}
+.staff-dialog.is-confirm .staff-dialog-icon { background: #f8e3dc; color: var(--st-red); }
+.staff-dialog-icon svg { width: 38px; height: 38px; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.staff-dialog-icon circle { fill: currentColor; stroke: none; }   /* 驚嘆號、問號下面的點：實心 */
+/* 刪除的警告：圓角的紅色實心三角形，沒有圓框、沒有底色；驚嘆號用卡片的底色，看起來像挖空的 */
+.staff-dialog.is-danger .staff-dialog-icon { width: 64px; height: 58px; background: none; border-radius: 0; }
+.staff-dialog.is-danger .staff-dialog-icon svg { width: 64px; height: 58px; }
+.staff-dialog-icon .tri { fill: var(--st-red); stroke: var(--st-red); stroke-width: 5; }   /* 粗的同色外框＋圓角接點＝三個角變圓 */
+.staff-dialog-icon .mark { stroke: var(--st-card); stroke-width: 4.4; }
+.staff-dialog-icon circle.mark { fill: var(--st-card); stroke: none; }
+.staff-dialog-text { margin: 0 0 22px; font-size: 16px; line-height: 1.7; white-space: pre-line; }
+.staff-dialog-btns { display: flex; gap: 10px; }
+.staff-dialog-btns .staff-btn { flex: 1; justify-content: center; min-height: 44px; font-size: 15px; }
+@keyframes staff-dialog-in { from { opacity: 0; transform: translateY(-14px); } }
+
+
+
+/* ========== 3. 版面：左邊選單 + 右邊內容 ========== */
+.staff-layout {
+  display: grid;
+  grid-template-columns: var(--st-side-w) minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+.staff-side {
+  position: sticky; top: 0;
+  display: flex; flex-direction: column; gap: 6px;
+  height: 100vh;
+  padding: 12px 8px;
+  background: var(--st-card);
+  border-right: 1px solid var(--st-border);
+  overflow-y: auto;
+}
+.staff-menu { display: flex; flex-direction: column; gap: 6px; }
+
+/* 選單的每一項：上面圖示、下面文字 */
+.staff-brand,
+.staff-menu-item {
+  flex: none;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  width: 100%; min-height: 70px;
+  padding: 8px 4px;
+  background: none;
+  border: 0; border-radius: 14px;
+  color: var(--st-muted);
+  font-size: 13px; font-weight: 500;
+  transition: background-color .2s, color .2s;
+}
+.staff-menu-item svg {
+  width: 26px; height: 26px;
+  fill: none; stroke: currentColor; stroke-width: 1.6;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+.staff-brand { margin-bottom: 6px; padding-bottom: 12px; border-bottom: 1px solid var(--st-border); border-radius: 14px 14px 0 0; }
+.staff-brand img { width: 40px; height: 40px; }
+.staff-brand:hover,
+.staff-menu-item:hover { background: var(--st-soft); color: var(--st-text); }
+/* 目前所在的頁面 */
+.staff-menu-item.active { background: var(--st-red); color: #fff; }
+.staff-brand.active { color: var(--st-red); }
+/* 摺疊選單（後臺管理）：外層 staff-group 有 open 這個 class 時才顯示裡面的項目 */
+.staff-group { display: flex; flex-direction: column; gap: 6px; }
+.staff-submenu {
+  display: none;
+  flex-direction: column; gap: 4px;
+  padding: 4px;
+  background: var(--st-soft);   /* 用深一階的底色把三個項目框在一起，看得出是同一組 */
+  border-radius: 14px;
+}
+.staff-group.open .staff-submenu { display: flex; }
+/* 展開時「後臺管理」的文字變深色，小箭頭轉向上 */
+.staff-group.open .staff-group-toggle { color: var(--st-text); }
+.staff-group-arrow { display: inline-block; transition: transform .2s; }
+.staff-group.open .staff-group-arrow { transform: rotate(180deg); }
+/* 裡面的項目比外面的小一點 */
+.staff-sub-item { min-height: 58px; font-size: 12px; }
+.staff-sub-item svg { width: 22px; height: 22px; }
+.staff-sub-item:hover { background: var(--st-card); }
+/* 文字比較長的項目（例如「公告及QA」）：字小一號、不換行。
+   選單內可放文字的寬度：桌機約 64px、900px 以下約 52px、手機約 60px，11px 的「公告及QA」約 47px，三種寬度都放得下 */
+.staff-sub-item.is-compact span { font-size: 11px; white-space: nowrap; }
+
+/* 最下面的「員工登入」 */
+.staff-menu-bottom { margin-top: auto; border-top: 1px solid var(--st-border); border-radius: 0 0 14px 14px; }
+
+.staff-main { min-width: 0; padding: 24px 28px 40px; }
+
+.staff-header {
+  display: flex; align-items: flex-end; justify-content: space-between; gap: 16px;
+  margin-bottom: 22px;
+}
+.staff-eyebrow { color: var(--st-red); font-size: 13px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
+.staff-title { font-family: var(--st-serif); font-size: 28px; font-weight: 700; line-height: 1.3; }
+.staff-clock { color: var(--st-muted); font-size: 15px; white-space: nowrap; }
+
+
+/* ========== 4. 大按鈕（磚）：主頁、公告管理的入口 ========== */
+.home-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px;
+  margin-bottom: 22px;
+}
+/* 大按鈕：上緣一條顏色線 */
+.home-tile {
+  display: flex; flex-direction: column; justify-content: flex-end; gap: 4px;
+  min-height: 160px;
+  padding: 22px 24px;
+  background: var(--st-card);
+  border: 1px solid var(--st-border);
+  border-top: 5px solid var(--st-muted);
+  border-radius: var(--st-radius);
+  box-shadow: var(--st-shadow);
+  transition: transform .2s, box-shadow .2s;
+}
+.home-tile:hover { transform: translateY(-3px); box-shadow: 0 12px 28px rgba(90, 60, 30, .12); }
+.home-tile:active { transform: scale(.98); }
+.tile-red    { border-top-color: var(--st-red); }
+.tile-yellow { border-top-color: var(--st-yellow); }
+.tile-green  { border-top-color: var(--st-green); }
+/* 大按鈕上方的圖示：線條樣式和左邊選單的圖示一樣，顏色跟著那一塊上緣的顏色線 */
+.home-tile-icon {
+  width: 44px; height: 44px;
+  margin-bottom: auto;   /* 把圖示推到最上面，標題和說明留在下面 */
+  fill: none; stroke: currentColor; stroke-width: 1.5;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+.tile-red .home-tile-icon    { color: var(--st-red); }
+.tile-yellow .home-tile-icon { color: var(--st-yellow); }
+.tile-green .home-tile-icon  { color: var(--st-green); }
+.home-tile-title { font-family: var(--st-serif); font-size: 26px; font-weight: 700; }
+.home-tile-desc { color: var(--st-muted); font-size: 15px; }
+
+
+/* ========== 5. 直立的平板與較窄的畫面（900px 以下） ========== */
+@media (max-width: 900px) {
+  :root { --st-side-w: 84px; }
+  .staff-main { padding: 20px 18px 36px; }
+}
+
+
+/* ========== 6. 手機（640px 以下） ========== */
+@media (max-width: 640px) {
+  /* 選單移到畫面最下面，變成一排可以左右滑動的按鈕 */
+  .staff-layout { display: block; padding-bottom: 76px; }
+  .staff-side {
+    position: fixed; top: auto; left: 0; right: 0; bottom: 0; z-index: 1000;
+    flex-direction: row; gap: 4px;
+    height: 72px;
+    padding: 4px 6px;
+    border-right: 0; border-top: 1px solid var(--st-border);
+    overflow-x: auto; overflow-y: hidden;
+  }
+  .staff-menu { flex-direction: row; gap: 4px; }
+  /* 摺疊選單在手機上是橫的：展開時三個項目接在「後臺管理」的右邊 */
+  .staff-group { flex: none; flex-direction: row; gap: 4px; }
+  .staff-submenu { flex-direction: row; padding: 0 4px; }
+  .staff-brand,
+  .staff-menu-item { width: 68px; min-height: 0; height: 62px; }
+  .staff-brand { margin: 0; padding-bottom: 8px; border-bottom: 0; border-radius: 14px; }
+  .staff-brand img { width: 28px; height: 28px; }
+  .staff-menu-bottom { margin-top: 0; border-top: 0; border-radius: 14px; }
+
+  .staff-main { padding: 16px 14px 24px; }
+  .staff-header { flex-direction: column; align-items: flex-start; gap: 4px; }
+  .staff-title { font-size: 24px; }
+  .staff-card { padding: 16px; }
+
+  .home-grid { grid-template-columns: 1fr; }
+  .home-tile { min-height: 110px; }
+}
+
+/* 等待圖示：用 CSS 畫的餐盤蓋（照 images/code_generated_image.gif）
+   --size 決定大小，其他尺寸都跟著等比例縮放（--u 是 GIF 裡的 1px） */
+.cloche-loader {
+  --size: 96px;
+  --u: calc(var(--size) / 140);
+  --c-line: #2e4033;   /* 深綠：外圈、蓋子、底盤 */
+  --c-knob: #8c2a2a;   /* 酒紅：蓋子上的把手 */
+  position: relative;
+  width: var(--size); height: var(--size);
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 calc(6 * var(--u)) var(--c-line);   /* 外圈（用陰影畫，不會佔掉裡面的位置） */
+  animation: cloche-bob 1.84s ease-in-out infinite;
+}
+/* 蓋子：只有上、左、右邊框的半圓 */
+.cloche-loader::before {
+  content: ""; position: absolute; box-sizing: border-box;
+  left: calc(35 * var(--u)); top: calc(40 * var(--u));
+  width: calc(70 * var(--u)); height: calc(36 * var(--u));
+  border: calc(6 * var(--u)) solid var(--c-line); border-bottom: 0;
+  border-radius: calc(35 * var(--u)) calc(35 * var(--u)) 0 0;
+}
+/* 底盤：一條橫線 */
+.cloche-loader::after {
+  content: ""; position: absolute;
+  left: calc(28 * var(--u)); top: calc(75 * var(--u));
+  width: calc(85 * var(--u)); height: calc(6 * var(--u));
+  background: var(--c-line); border-radius: calc(3 * var(--u));
+}
+/* 把手：紅色圓點，蓋在蓋子頂端上面 */
+.cloche-loader i {
+  position: absolute; z-index: 1;
+  left: calc(62 * var(--u)); top: calc(27 * var(--u));
+  width: calc(17 * var(--u)); height: calc(17 * var(--u));
+  background: var(--c-knob); border-radius: 50%;
+}
+/* 整個圖示上下浮動 */
+@keyframes cloche-bob {
+  0%, 100% { transform: translateY(calc(-7 * var(--u))); }
+  50%      { transform: translateY(calc(7 * var(--u))); }
+}
+/* 使用者在系統設定裡關掉動畫的話：不浮動 */
+@media (prefers-reduced-motion: reduce) {
+  .cloche-loader { animation: none; }
+}
+
+/* 送出中（staff.js 的 A-8 加上 is-loading）：按下去的按鈕不能再按，裡面顯示等待圖示 */
+.is-loading { pointer-events: none; white-space: nowrap; }   /* nowrap：結帳按鈕比較窄時，「處理中…」不要換行 */
+.is-loading .cloche-loader { --size: 32px; display: inline-block; vertical-align: middle; }
+/* 一般按鈕（現金、儲存變更、會員的確認…）：圖示小一點、和文字同色，放在「處理中…」前面 */
+.staff-btn.is-loading .cloche-loader { flex-shrink: 0; --size: 24px; --c-line: currentColor; --c-knob: currentColor; margin: -6px 8px -6px 0; }
+/* 刷卡的付款中（staff.js 的 staffCardPaying）：按鈕還可以點，點了會把綠界的付款視窗叫到最前面 */
+.is-loading.is-paying { pointer-events: auto; cursor: pointer; }
+/* 送出中的蒙版（staff.js 的 A-8，表單有寫 data-loading 才會加）：按鈕所在的區塊蓋一層 20% 的白色，圓角跟著區塊；
+   按下去的按鈕浮在白色那一層上面，不會跟著變淡 */
+.is-submitting::after {
+  content: "";
+  position: absolute; inset: 0; z-index: 2;
+  border-radius: inherit;
+  background: rgba(255, 255, 255, .2);
+  pointer-events: none;
+}
+.is-submitting .is-loading { position: relative; z-index: 3; }
+/* data-loading-mask="center"（工作面板的出餐、退回、確認送達）：60% 的白色，等待圖示放在蒙版正中間；
+   按鈕裡的文字（菜名、「出餐 →」「● 等待送餐」）和排列都不動，只是蓋在白色下面 */
+.is-submitting.mask-center::after { background: rgba(255, 255, 255, .6); }
+.mask-loader {
+  position: absolute; inset: 0; z-index: 3;
+  display: grid; place-items: center;
+  pointer-events: none;
+}
+.mask-loader .cloche-loader { --size: 34px; }
+/* 上面 .is-loading 的 nowrap 是給「處理中…」用的；這裡按鈕內容沒換，菜名太長時要照原本的樣子換行，尺寸才不會變 */
+.mask-center.is-loading,
+.mask-center .is-loading { white-space: normal; }

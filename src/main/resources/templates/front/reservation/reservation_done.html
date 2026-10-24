@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bistroops｜訂位完成</title>
+
+<link rel="icon" th:href="@{/images/logo-mark.svg}" type="image/svg+xml">
+<link rel="stylesheet" th:href="@{/css/front/front.css}">
+<link rel="stylesheet" th:href="@{/css/front/member.css}">
+<link rel="stylesheet" th:href="@{/css/front/reservation.css}">
+
+<script th:src="@{/js/front/member.js}" defer></script>
+<script th:src="@{/js/front/announcement.js}" defer></script>
+</head>
+<body>
+	<div th:replace="~{front/member/member_modals :: modals}"></div>
+	<header th:replace="~{front/front_layout :: header('reservation')}"></header>
+
+	<main class="booking">
+		<div class="container">
+			<header class="booking-head">
+				<p class="eyebrow">Reservation</p>
+				<h1 class="booking-title">訂位結果</h1>
+			</header>
+
+			<section class="booking-result">
+				<h2 th:text="${status == '預約' ? '訂位成功' : '訂位紀錄'}"></h2>
+
+				<p class="result-no">
+					訂位編號 <strong th:text="${reservationNo}"></strong>
+				</p>
+
+				<dl class="summary-list">
+					<div>
+						<dt>日期</dt>
+						<dd th:text="${dateText}"></dd>
+					</div>
+					<div>
+						<dt>時段</dt>
+						<dd th:text="${timeText}"></dd>
+					</div>
+					<div>
+						<dt>桌型</dt>
+						<dd th:text="|${tableType} 人桌|"></dd>
+					</div>
+					<div
+						th:if="${bookingName != null and !#strings.isEmpty(bookingName)}">
+						<dt>聯絡姓名</dt>
+						<dd th:text="${bookingName}"></dd>
+					</div>
+					<div>
+						<dt>電話</dt>
+						<dd th:text="${phone}"></dd>
+					</div>
+					<div>
+						<dt>狀態</dt>
+						<dd th:text="${status}"></dd>
+					</div>
+					<div>
+						<dt>備註</dt>
+						<dd style="white-space: pre-wrap;"
+							th:text="${#strings.isEmpty(note) ? '無' : note}"></dd>
+					</div>
+				</dl>
+
+				<div
+					style="display: flex; gap: 12px; margin-top: 24px; flex-wrap: wrap;">
+					<a class="btn-solid" th:href="@{/bistroops}">返回首頁</a> <a
+						class="btn-outline" th:href="@{/bistroops/reservation}"> 訂位／查詢
+					</a>
+				</div>
+			</section>
+		</div>
+	</main>
+
+	<footer th:replace="~{front/front_layout :: footer}"></footer>
+	<button th:replace="~{front/front_layout :: backToTop}"></button>
+</body>
+</html>

@@ -47,7 +47,8 @@ CREATE TABLE IF NOT EXISTS orders_details(
   od_discount_total INT COMMENT '折扣金額',
   od_actual_price INT COMMENT '小計',
   od_comment VARCHAR(30) COMMENT '備註',
-	od_status VARCHAR(5) COMMENT '訂單狀態',
+  od_status VARCHAR(5) COMMENT '訂單狀態',
+  od_served_at DATETIME NULL COMMENT'送達時間',
   PRIMARY KEY(orders_details_no)
 ) COMMENT '訂單明細';
 
@@ -55,7 +56,7 @@ CREATE TABLE IF NOT EXISTS orders_details(
 CREATE TABLE IF NOT EXISTS meal(
   meal_no INT UNSIGNED AUTO_INCREMENT COMMENT '菜品編號',
   meal_type_no INT UNSIGNED COMMENT '類別編號',
-  meal_name VARCHAR(30) NOT NULL COMMENT '名稱',
+  meal_name VARCHAR(255) NOT NULL COMMENT '名稱',
   meal_img MEDIUMBLOB COMMENT '圖片',
   meal_exp MEDIUMTEXT COMMENT '說明',
   meal_price INT NOT NULL COMMENT '價格',
@@ -77,7 +78,6 @@ CREATE TABLE IF NOT EXISTS promote(
   promote_name VARCHAR(10) COMMENT '活動名稱',
   promote_begin DATETIME COMMENT '開始時間',
   promote_end DATETIME COMMENT '結束時間',
-  promote_status VARCHAR(5) COMMENT '活動狀態',
   promote_content MEDIUMTEXT COMMENT '活動內容',
   promote_img MEDIUMBLOB COMMENT '活動圖片',
   PRIMARY KEY(promote_no)
@@ -95,14 +95,15 @@ CREATE TABLE IF NOT EXISTS promote_meal(
 CREATE TABLE IF NOT EXISTS employee(
   emp_no INT UNSIGNED AUTO_INCREMENT COMMENT '員工編號',
   emp_name VARCHAR(30) NOT NULL COMMENT '姓名',
-  emp_password VARCHAR(60) NOT NULL COMMENT '密碼',
+  emp_password VARCHAR(100) NOT NULL COMMENT '密碼',
+  emp_pwd_changed BOOLEAN NOT NULL DEFAULT FALSE COMMENT '是否已完成首次密碼修改',
   emp_tel VARCHAR(10) NOT NULL COMMENT '本人電話',
   emp_ice VARCHAR(30) COMMENT '緊急聯絡人',
   emp_icetel VARCHAR(10) COMMENT '緊急聯絡人電話',
   emp_add VARCHAR(100) COMMENT '地址',
   emp_sal INTEGER NOT NULL COMMENT '月薪',
-  emp_status VARCHAR(2) NOT NULL COMMENT '員工狀態',
-  emp_pic MEDIUMBLOB COMMENT '員工照片',
+  emp_status VARCHAR(2) NOT NULL COMMENT '員工狀態：1在職、2停用',
+  emp_photo MEDIUMBLOB COMMENT '員工照片',
   PRIMARY KEY (emp_no)
 ) COMMENT '員工';
 
@@ -178,7 +179,7 @@ CREATE TABLE IF NOT EXISTS member (
   mem_tel CHAR(10) NOT NULL COMMENT '電話',
   mem_name VARCHAR(30) COMMENT '姓名',
   mem_account VARCHAR(16) COMMENT '帳號',
-  mem_password VARCHAR(16) COMMENT '密碼',
+  mem_password VARCHAR(100) COMMENT '密碼',
   mem_mail VARCHAR(30) COMMENT 'Email',
   mem_barcode CHAR(8) COMMENT '載具條碼',
   mem_tag VARCHAR(50) COMMENT '客戶備註',
@@ -226,25 +227,55 @@ CREATE TABLE IF NOT EXISTS announcement(
 /*假資料, 測試資料*/
 -- 1. 插入義式料理類別 (meal_type)
 INSERT INTO meal_type (meal_type_name) VALUES 
+('主打推薦'),
 ('開胃菜'),
-('主餐'),
-('飲料'),
-('甜點');
+('義大利麵'),
+('燉飯'),
+('經典排餐'),
+('甜點'),
+('飲料');
+
 
 -- 2. 插入義式菜品資料 (meal)
 INSERT INTO meal (meal_type_no, meal_name, meal_exp, meal_price, meal_status_en) VALUES
-(1, '義式烤麵包 Bruschetta', '新鮮番茄粒搭配羅勒與初榨橄欖油', 160, '上架'),
-(1, '酥炸墨魚圈', '附塔塔醬與新鮮黃檸檬塊', 220, '上架'),
-(1, '義式卡布里沙拉', '莫札瑞拉起司搭配新鮮番茄與羅勒醬', 200, '上架'),
-(2, '經典粉紅醬海鮮燉飯', '濃郁奶油番茄醬汁搭配鮮蝦與干貝', 380, '上架'),
-(2, '牛肝菌野菇義大利麵', '香濃牛肝菌醬汁配現削帕馬森起司', 320, '上架'),
-(2, '瑪格麗特披薩', '拿坡里手工餅皮、莫札瑞拉起司與新鮮羅勒', 300, '上架'),
-(2, '米蘭松露肋眼牛排', '低溫慢燉搭配黑松露醬汁', 680, '未上架'),
-(3, '西西里檸檬氣泡咖啡', '現粹濃縮咖啡搭配西西里檸檬汁', 130, '未上架'),
-(3, '義式濃縮咖啡 Espresso', '雙份萃取，香濃苦甘', 90, '上架'),
-(3, '氣泡礦泉水 San Pellegrino', '義大利原裝進口瓶裝氣泡水', 100, '上架'),
-(4, '主廚手工提拉米蘇', '濃郁馬斯卡彭起司與浸泡咖啡酒的手指餅乾', 160, '未上架'),
-(4, '義式香草奶酪', '附野生莓果醬', 120, '上架');
+(2, '義式烤麵包 Bruschetta', '新鮮番茄粒搭配羅勒與初榨橄欖油', 160, '上架'),
+(2, '酥炸墨魚圈', '附塔塔醬與新鮮黃檸檬塊', 220, '上架'),
+(2, '義式卡布里沙拉', '莫札瑞拉起司搭配新鮮番茄與羅勒醬', 200, '上架'),
+(2, '蒜味奶油烤野菇', '綜合野菇佐蒜味香草奶油醬（蛋奶素）', 180, '上架'),
+(2, '帕瑪火腿哈密瓜卷', '經典鹹甜組合，嚴選帕瑪生火腿搭配甜哈密瓜', 280, '上架'),
+(2, '松露起司薯條', '現炸金黃薯條刨上帕瑪森起司佐黑松露醬（蛋奶素）', 190, '上架'),
+(3, '牛肝菌野菇義大利麵', '香濃牛肝菌醬汁配現削帕馬森起司', 320, '上架'),
+(3, '粉紅醬焗烤筆管麵', '濃郁粉紅醬搭配多種時蔬菜彩（蛋奶素）', 280, '上架'),
+(3, '熱那亞羅勒青醬細扁麵', '自製羅勒青醬搭配烤松子與帕瑪森起司（蛋奶素）', 270, '上架'),
+(3, '經典波隆那肉醬麵', '慢火燉煮傳統牛肉豬肉綜合番茄肉醬', 300, '上架'),
+(3, '奶油卡邦尼培根麵', '經典蛋黃奶油醬搭配香煎培根與黑胡椒', 290, '上架'),
+(3, '威尼斯墨魚汁海鮮麵', '特調墨魚醬汁炒鮮蝦、蛤蜊與透抽', 380, '上架'),
+(3, '香蒜辣味白酒蛤蜊麵', '新鮮蛤蜊搭配蒜片、乾辣椒與白酒香炒', 320, '上架'),
+(4, '經典粉紅醬海鮮燉飯', '濃郁奶油番茄醬汁搭配鮮蝦與干貝', 380, '上架'),
+(4, '松露野菇燉飯', '濃郁黑松露醬與綜合野菇義大利燉飯（蛋奶素）', 360, '上架'),
+(4, '西西里番茄海鮮燉飯', '鮮甜番茄高湯燉煮多種時令海鮮', 390, '上架'),
+(4, '拿坡里牛肝菌菇燉飯', '嚴選義大利牛肝菌菇高湯燉煮（蛋奶素）', 380, '上架'),
+(5, '托斯卡尼獵人風燉雞', '慢火燉煮去骨雞腿肉，搭番茄、黑橄欖、彩椒與紅酒醬汁', 420, '上架'),
+(5, '巴薩米克櫻桃鴨胸', '宜蘭櫻桃鴨胸香煎至粉紅熟度，淋上巴薩米克黑醋櫻桃醬', 580, '上架'),
+(5, '羅馬香草烤豬腳', '外皮香酥大豬腳，搭配自製義式酸菜與粒醬芥末', 620, '上架'),
+(5, '西西里香草烤嫩羊肩排', '紐西蘭羊肩排搭配新鮮薄荷青醬與香草麵包粉烘烤', 680, '上架'),
+(5, '地中海煎烤海鱸魚排', '新鮮海鱸魚菲力香煎，搭配蒔蘿鮮蝦起司醬與烤時蔬', 520, '上架'),
+(5, '波隆那香煎小牛肉佐帕瑪火腿', '嫩小牛肉片疊上帕瑪火腿與鼠尾草，以白酒黃油煎香', 560, '上架'),
+(5, '拿坡里香辣奶油大蝦排', '野生大草蝦搭配蒜香辣椒奶油，附烤法式麵包沾醬', 480, '上架'),
+(5, '主廚手作黑松露烤大褐菇排', '巨型大褐菇鑲黑松露時蔬內餡，覆蓋莫札瑞拉起司烘烤（蛋奶素）', 380, '上架'),
+(5, '米蘭式巴薩米克燉小牛膝', '米蘭百年名菜 Ossobuco，牛膝燉至軟嫩搭義式香草檸檬醬', 720, '未上架'),
+(6, '主廚手工提拉米蘇', '濃郁馬斯卡彭起司與浸泡咖啡酒的手指餅乾', 160, '未上架'),
+(6, '義式香草奶酪', '附野生莓果醬', 120, '上架'),
+(6, '香草熔岩巧克力蛋糕', '切開爆漿熱巧克力佐香草冰淇淋（蛋奶素）', 160, '上架'),
+(6, '檸檬塔', '新鮮黃檸檬內餡與香酥塔皮（蛋奶素）', 140, '上架'),
+(6, '義式香草冰淇淋', '傳統手工低脂香草冰淇淋雙球（蛋奶素）', 100, '上架'),
+(6, '焦糖烤布蕾', '現烤香脆焦糖蓋上濃郁蛋黃布丁（蛋奶素）', 120, '上架'),
+(6, '開心果巴斯克乳酪蛋糕', '濃郁開心果醬搭配綿密乳酪蛋糕（蛋奶素）', 170, '上架'),
+(7, '綜合野莓派', '酸甜綜合野莓內餡香脆甜派（蛋奶素）', 150, '未上架'),
+(7, '西西里檸檬氣泡咖啡', '現粹濃縮咖啡搭配西西里檸檬汁', 130, '未上架'),
+(7, '義式濃縮咖啡', '雙份萃取，香濃苦甘', 90, '上架'),
+(7, '氣泡礦泉水','原裝進口瓶裝氣泡水', 100, '上架');
+
 
 -- 3. 桌型 (seat_type)
 INSERT INTO seat_type (
@@ -289,12 +320,12 @@ INSERT INTO member (
     mem_status
 ) VALUES
 (
-    '0985510798',
+    '0912345678',
     '王小明',
     'wangming01',
-    'Test1234',
+    '{bcrypt}$2y$10$ESZlY8Y.MzLF766jXF.4CuB9qzoXm0/YDTdSpbQGom60rnTwKKDtO',
     'wangming01@example.com',
-    'AB123456',
+    '/AB12345',
     '喜歡靠窗座位',
     '1995-03-15',
     'wang.ming',
@@ -307,9 +338,9 @@ INSERT INTO member (
     '0985510798',
     '陳小華',
     'chenhua02',
-    'Test5678',
+    '{bcrypt}$2y$10$wluGpbXL8u4rOUKBLjjGU.BsiJURH6BK970uv2UlKBByQMx7H2862',
     'chenhua02@example.com',
-    'CD234567',
+    '/CD23456',
     '不吃香菜',
     '1998-07-22',
     NULL,
@@ -319,12 +350,12 @@ INSERT INTO member (
     '已驗證'
 ),
 (
-    '0985510798',
+    '0911111111',
     '林小美',
     'linmei03',
-    'Test9012',
+    '{bcrypt}$2y$10$nd.4i4UlqHTSVHjsH604CegjjzH3EAPhRBOJyFb.4ox4SPMVwxpBq',
     'linmei03@example.com',
-    'EF345678',
+    '/EF34567',
     '生日用餐',
     '2000-11-08',
     'lin.meimei',
@@ -341,10 +372,21 @@ INSERT INTO orders (seat_no, member_no, orders_time, orders_total, orders_discou
 ('C01', 3, '2026-08-24 19:40:00', 430, 0, 430, '現金');
 
 -- 7. 活動 (promote)
-INSERT INTO promote (promote_name, promote_begin, promote_end, promote_status, promote_content, promote_img) VALUES
-('週年慶活動', '2026-09-01 10:00:00', '2026-09-30 22:00:00', '不在進行中', '週年慶全館商品優惠活動', NULL),
-('中秋節活動', '2026-09-20 10:00:00', '2026-10-06 22:00:00', '不在進行中', '中秋節限定商品優惠', NULL),
-('雙十節活動', '2026-10-01 10:00:00', '2026-10-10 22:00:00', '進行中', '雙十國慶期間限定活動', NULL);
+INSERT INTO promote (promote_name, promote_begin, promote_end, promote_content) VALUES
+('中秋節活動', '2026-09-20 10:00:00', '2026-10-06 22:00:00',  '中秋節限定商品優惠'),
+('2026生日禮', '2026-02-15 00:00:00', '2026-02-28 23:59:59', '出示身份證，當月生日享提拉米蘇一份。'),
+('情人節套餐', '2026-03-10 11:00:00', '2026-03-15 22:00:00', '雙人浪漫限定套餐。'),
+('平日午間優惠', '2027-01-01 00:00:00', '2027-12-31 23:59:59', '週一至週五 11:00–14:00，商業午餐 85 折。'),
+('母親節感恩祭', '2026-05-01 00:00:00', '2026-05-15 23:59:59', '帶媽媽來店用餐，拍照打卡即享全單 85 折。'),
+('畢業季優惠', '2026-06-01 00:00:00', '2026-06-30 23:59:59', '憑學生證或畢業證書，享滿千送百折價券。'),
+('父親節特別獻禮', '2026-08-01 00:00:00', '2026-08-10 23:59:59', '爸爸專屬優惠，提供父親節特別套餐。'),
+('中秋慶團圓', '2026-09-15 00:00:00', '2026-09-25 23:59:59', '中秋期間消費滿額，即贈送品牌限量紀念周邊。'),
+('秋季溫暖祭', '2026-10-05 10:00:00', '2026-10-20 22:00:00', '點購指定湯品或熱飲，即贈送每日精選甜點乙份。'),
+('雙十連假特惠', '2026-10-07 00:00:00', '2026-10-12 23:59:59', '連假期間兩人同行，第二件主餐享半價優惠。'),
+('雙十節活動', '2026-10-01 10:00:00', '2026-10-31 22:00:00',  '雙十國慶期間限定活動，指定開胃菜半價'),
+('跨年特別企劃', '2026-12-31 18:00:00', '2027-01-01 02:00:00', '跨年夜限定酒精飲品暢飲活動。'),
+('春季新菜上市', '2027-03-01 00:00:00', '2027-03-31 23:59:59', '春季新品主餐登場，嘗鮮價享有 85 折優惠。'),
+('週年慶活動', '2027-09-01 10:00:00', '2027-09-30 22:00:00',  '週年慶主廚推薦菜品享優惠活動');
 
 -- 8. 活動商品 (promote_meal)
 INSERT INTO promote_meal (promote_no, meal_no, promote_discount) VALUES
@@ -352,20 +394,21 @@ INSERT INTO promote_meal (promote_no, meal_no, promote_discount) VALUES
 (1, 2, 150),
 (1, 3, 150);
 
--- 9. 插入義餐訂單明細 (orders_details)
-INSERT INTO orders_details (orders_no, meal_no, promote_no, od_meal_num, od_discount_price, od_discount_total, od_actual_price, od_comment, od_status) VALUES 
--- 訂單 1 明細 (A01 桌)
-(1, 1, null, 1, 160, 0, 160, '麵包要烤酥一點', '已送達'),
-(1, 4, 1, 1, 380, 0, 380, '飯軟一點', '已送達'),
-(1,8, null, 1, 130, 0, 130, '少冰', '已取消'),
-(1,11, 2, 1, 160, 50, 110, '', '等待送餐'),
--- 訂單 2 明細 (B01 桌)
-(2,3, null, 1, 200, 0, 200, '', '已送達'),
-(2, 7, 1, 1, 680, 0, 680, '三分熟', '等待送餐'),
-(2, 10, null, 1, 100, 0, 100, '加冰塊與檸檬片', '準備中'),
--- 訂單 3 明細 (C01 桌)
-(3, 6, null, 1, 300, 0, 300, '起司多一點', '準備中'),
-(3, 8, 1, 1, 130, 0, 130, '去冰', '未備料');
+-- 9. 訂單明細 (orders_details)
+-- 狀態統一用：製作中／等待送餐／已送達／已取消；還沒送達的送達時間填 NULL
+INSERT INTO orders_details (orders_no, meal_no, promote_no, od_meal_num, od_discount_price, od_discount_total, od_actual_price, od_comment, od_status, od_served_at) VALUES
+-- 訂單 1 (A01)：烤麵包套用中秋特價 120
+(1,  1,    1, 1, 160, 40, 120, '麵包要烤酥一點', '已送達',   '2026-10-01 18:42:00'),
+(1, 14, NULL, 1, 380,  0, 380, '飯軟一點',       '已送達',   '2026-10-01 18:55:00'),
+(1, 37, NULL, 1, 100,  0, 100, '少冰',           '已取消',   NULL),
+(1, 29, NULL, 1, 160,  0, 160, '',               '等待送餐', NULL),
+-- 訂單 2 (B01)：卡布里沙拉套用中秋特價 150
+(2,  3,    1, 1, 200, 50, 150, '',               '已送達',   '2026-10-01 19:27:00'),
+(2, 21, NULL, 1, 680,  0, 680, '三分熟',         '等待送餐', NULL),
+(2, 37, NULL, 1, 100,  0, 100, '加冰塊與檸檬片', '製作中',   NULL),
+-- 訂單 3 (C01)：剛點完
+(3, 10, NULL, 1, 300,  0, 300, '起司多一點',     '製作中',   NULL),
+(3, 37, NULL, 1, 100,  0, 100, '去冰',           '製作中',   NULL);
 
 -- 10. 候位 (waiting)
 INSERT INTO waiting (
@@ -407,29 +450,40 @@ VALUES
     (3, 3, 6, '2026-08-24 20:45:00', '預約', '6人慶生聚餐');
 
 -- 13. 員工 (employee)
-INSERT INTO employee (emp_name, emp_password, emp_tel, emp_ice, emp_icetel, emp_add, emp_sal, emp_status, emp_pic) VALUES
-('陳小心', '12345678', '0987878787', '', '', '', 30000,'在職',null),
-('カイル', '910111213', '0911223344', '愛蜜莉雅', '0987654321', '露格尼卡王國', 40000,'在職',null),
-('張學長', '11111111', '0987654321', '', '', '電腦市程式碼街最強社區666號', 100000,'離職',null),
-('李木子', 'abcdefgh', '0900111222', '', '', '快樂縣可愛鄉聰明路102號', 40000,'在職',null),
-('強滾滾', 'poiuytrew', '0933445566', '張學長', '0987654321', '電腦市程式碼街最強社區666號', 50000, '在職',null);
+INSERT INTO employee
+(emp_name, emp_password, emp_tel, emp_ice,
+ emp_icetel, emp_add, emp_sal, emp_status, emp_photo)
+VALUES
+('陳小心',
+ '{bcrypt}$2y$10$6SYYr3G35GKj0Ekhw6UKd.y6sUTmCBp4/jWfykkSo0YHlJ0r1qa9q',
+ '0987878787', '', '', '', 30000, '1', NULL),
+
+('カイル',
+ '{bcrypt}$2y$10$BEoKQ7peCLE37..771PRgece9Vv/bzU1jQXGoSvGphSzIJz/BJ11S',
+ '0911223344', '愛蜜莉雅', '0987654321', '露格尼卡王國', 40000, '1', NULL),
+
+('張學長',
+ '{bcrypt}$2y$10$Nxb9YSwhmDWc58oUYd1KWumgnHseCQlDJgaLEMyVWpqprQ.rnuck.',
+ '0987654321', '', '', '電腦市程式碼街最強社區666號', 100000, '2', NULL),
+
+('李木子',
+ '{bcrypt}$2y$10$OMPcRNLstLX4WZVQne5LcuXvTudI5K89ZRHW7lC5bremWmKZ5tod2',
+ '0900111222', '', '', '快樂縣可愛鄉聰明路102號', 40000, '1', NULL),
+
+('強滾滾',
+ '{bcrypt}$2y$10$4hmVp4LxpKKQ.A5XlbhnIOTUfu9p4cmY.fGKpBLOJjtAgSR5YmiSK',
+ '0933445566', '張學長', '0987654321',
+ '電腦市程式碼街最強社區666號', 50000, '1', NULL);
 
 -- 14. 權限 (permission)
 INSERT INTO permission (perm_exp) VALUES
-('員工管理'),
-('會員管理'),
-('菜單管理'),
-('活動管理'),
-('公告設定'),
-('桌型管理'),
-('入座管理'),
-('訂單管理_廚師'),
-('訂單管理_菜口'),
+('訂單管理_內場'),
 ('訂單管理_外場'),
+('入座管理'),
+('訂候位管理'),
+('訂單管理'),
 ('結帳'),
-('預約管理'),
-('候位管理'),
-('回饋表單管理');
+('後臺管理');
 
 -- 15. 員工權限 (emp_permission)
 INSERT INTO emp_permission (emp_no, perm_no) VALUES
@@ -437,10 +491,11 @@ INSERT INTO emp_permission (emp_no, perm_no) VALUES
 (1, 2),
 (1, 3),
 (1, 4),
+(1, 5),
+(1, 6),
+(1, 7),
 (2, 1),
-(3, 2),
-(4, 5),
-(5, 1);
+(2, 3);
 
 -- 16. 回饋 (feedback)
 INSERT INTO feedback (orders_no, fee_customer, fee_customer_tel, fee_customer_time, fee_time, fee_content, fee_rating) VALUES 
@@ -458,13 +513,6 @@ INSERT INTO announcement (ann_title, ann_begin, ann_img, ann_text) VALUES
 INSERT INTO qa (qa_title, qa_content) VALUES
 ('請問有提供素食餐點嗎？', '我們提供蛋奶素及全素的義大利麵與披薩，歡迎向服務人員諮詢。'),
 ('訂位最多可以接受幾人？', '線上訂位最多支援6人桌型，6人以上團體用餐請來電預約。');
-
--- 員工密碼雜湊
-UPDATE employee SET emp_password = '$2a$10$W1piZLcfCL5gHjKkGf4.v.Afjz1FzIoHyztqfRTDYngfVlSF9J9fS' WHERE emp_no = 1;
-UPDATE employee SET emp_password = '$2a$10$ZMA/uYRUBPQLNKF4sD7V7.UwjNT/ZSHY9.PmEhHsnNgT80XgKvVTm' WHERE emp_no = 2;
-UPDATE employee SET emp_password = '$2a$10$KeThXwIV/vQi4Wwu8MyjZesUjR4UvmN.hN0pug/JLEbSBX.vG05Kq' WHERE emp_no = 3;
-UPDATE employee SET emp_password = '$2a$10$kUUMK/RN9WQQyEcs4uASMev/LtWxD5gOTkznYrSZGIP.lbjf50aG.' WHERE emp_no = 4;
-UPDATE employee SET emp_password = '$2a$10$pMOm/67faB95DpVDXzNvw.76ayMpWf94c9s5D7Cam3FZxIn4fAOua' WHERE emp_no = 5;
 
 /*
 ALTER TABLE meal_type AUTO_INCREMENT = 1;

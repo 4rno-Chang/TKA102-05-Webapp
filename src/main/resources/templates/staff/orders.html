@@ -5,17 +5,23 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Bistroops 後台｜訂單管理</title>
-  <link rel="icon" th:href="@{/common/images/logo-mark.svg}" type="image/svg+xml">
+  <link rel="icon" th:href="@{/images/logo-mark.svg}" type="image/svg+xml">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet"
     href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&display=swap">
-  <link rel="stylesheet" th:href="@{/staff/common/css/staff.css}" />
-  <script th:src="@{/staff/common/js/staff.js}" defer></script>
-  <script th:src="@{/staff/orders/js/staff-orders.js}" defer></script>
+  <!-- staff.css：後台共用；orders.css：這一頁自己的樣式（要寫在 staff.css 後面） -->
+  <link rel="stylesheet" th:href="@{/css/staff/staff.css}" />
+  <link rel="stylesheet" th:href="@{/css/staff/orders.css}" />
+  <script th:src="@{/js/staff/staff.js}" defer></script>
+  <script th:src="@{/js/staff/orders.js}" defer></script>
 </head>
 
+<!--
+  訂單管理：查詢所有訂單（依狀態、日期、桌號或訂單編號）。
+  Controller：OrdersController 的 orders 方法（GET /staff/orders）；展開明細、日期月曆的程式在 orders.js。
+-->
 <body class="staff-layout">
   <nav th:replace="~{staff/staff_sidebar :: sidebar('orders')}"></nav>
 
@@ -28,90 +34,136 @@
       <p class="staff-clock" id="staffClock"></p>
     </header>
 
-    <!-- 篩選：依狀態 + 用桌號或訂單編號搜尋 -->
-    <!-- 【Thymeleaf 串接】篩選和搜尋改成一個 method="get" 的表單，條件會帶在網址上，
-         例如 /staff/orders?status=PAID&keyword=A1，Controller 用 @RequestParam 接 status 和 keyword。
-         把下面整個 orders-tools 的 div 換成：
 
-        <form class="orders-tools" th:action="@{/staff/orders}" method="get">
-          <div class="chips">
-            <button type="submit" class="chip" name="status" value=""
-                    th:classappend="${status == null or status == ''} ? 'active'">全部</button>
-            <button type="submit" class="chip" name="status" value="ACTIVE"
-                    th:classappend="${status == 'ACTIVE'} ? 'active'">用餐中</button>
-            （待結帳 DONE、已結帳 PAID、已取消 CANCELLED 寫法相同）
-          </div>
-          <input type="search" class="staff-input" name="keyword" th:value="${keyword}" placeholder="輸入桌號或訂單編號">
-        </form>
+    <!-- ================================================================
+         Controller 放進 Model 的資料：
+           orderslistAll  查出來的訂單清單
+           orderPromotes  每張訂單的活動折扣（訂單編號 → OrderPromoteDTO），沒參加的訂單不在裡面
+           status    目前的狀態：空字串（全部）／ACTIVE 用餐中／DONE 待結帳／PAID 已結帳／CANCELLED 已取消
+           keyword   搜尋的文字（桌號或訂單編號）
+           date      目前看的日期（2026-10-04）、dateText 顯示用的文字（10/04（日））、
+           prevDate  前一天、nextDate 後一天（已經是今天時放 null）、today 今天
+         ================================================================ -->
+    <div class="source-block" th:if="${orderslistAll != null}">
+      <p class="source-line"></p>
+       <!-- 篩選列：條件都帶在網址上，例如 /staff/orders?status=PAID&date=2026-10-04&keyword=A1
+           狀態的按鈕是連結（網址帶著目前的日期和關鍵字，所以換狀態時不會跑掉）。
+           日期和關鍵字在一個 method="get" 的表單裡：在月曆選了日期、或在搜尋框按 Enter，表單就會送出；
+           表單裡藏了一個 status，送出時會帶著目前的狀態。 -->
+      <form class="orders-tools" th:action="@{/staff/orders}" method="get">
+        <input type="hidden" name="status" th:value="${status}">
 
-         按哪一顆狀態按鈕，表單就帶著那顆的 value 和輸入框裡的關鍵字一起送出。
-         Controller 記得把收到的 status 和 keyword 再放回 Model，畫面才知道哪一顆要標成選取中。 -->
-    <div class="orders-tools">
-      <div class="chips" id="orderFilters">
-        <button type="button" class="chip active" data-filter="ALL">全部</button>
-        <button type="button" class="chip" data-filter="ACTIVE">用餐中</button>
-        <button type="button" class="chip" data-filter="DONE">待結帳</button>
-        <button type="button" class="chip" data-filter="PAID">已結帳</button>
-        <button type="button" class="chip" data-filter="CANCELLED">已取消</button>
-      </div>
-      <input type="search" class="staff-input" id="orderSearch" placeholder="輸入桌號或訂單編號" aria-label="搜尋訂單">
-    </div>
+        <div class="chips">
+          <a class="chip" th:href="@{/staff/orders(date=${date}, keyword=${keyword})}" th:classappend="${status == null or status == ''} ? 'active'">全部</a>
+          <a class="chip" th:href="@{/staff/orders(status='ACTIVE', date=${date}, keyword=${keyword})}" th:classappend="${status == 'ACTIVE'} ? 'active'">用餐中</a>
+          <a class="chip" th:href="@{/staff/orders(status='DONE', date=${date}, keyword=${keyword})}" th:classappend="${status == 'DONE'} ? 'active'">待結帳</a>
+          <a class="chip" th:href="@{/staff/orders(status='PAID', date=${date}, keyword=${keyword})}" th:classappend="${status == 'PAID'} ? 'active'">已結帳</a>
+          <a class="chip" th:href="@{/staff/orders(status='CANCELLED', date=${date}, keyword=${keyword})}" th:classappend="${status == 'CANCELLED'} ? 'active'">已取消</a>
+        </div>
 
-    <section class="staff-card">
-      <!-- 欄位名稱（手機寬度時隱藏） -->
-      <div class="order-row order-row-head">
-        <span>訂單編號</span><span>桌號</span><span>人數</span><span>下單時間</span><span class="num">金額</span><span>狀態</span><span></span>
-      </div>
-      <!-- 每一筆訂單一列，點一下可以展開餐點明細；由 staff-orders.js 產生 -->
-      <!-- 【Thymeleaf 串接】清單改用 th:each 產生。把下面 id="orderList" 的那行 div 換成：
+        <!-- 日期切換：只在「全部」「已結帳」「已取消」出現（「用餐中」「待結帳」只會是當天的訂單）。
+             一次看一天；‹ › 是連結，網址換成前一天、後一天；點中間的日期會跳出裝置內建的月曆。
+             不能選未來的日期：已經是今天時 nextDate 是 null，右箭頭變成不能點的樣子；月曆用 max 限制。
+             「已結帳」依結帳的日期查，其他（包含已取消）依下單的日期查。
+             中間的 date-nav-date 裡有兩個東西疊在一起：看得到的是日期文字；真正的日期欄位是透明的，
+             蓋在文字上面，所以點文字就會打開月曆（打開月曆、選了日期就送出表單的程式在 orders.js 的 A 區）。 -->
+        <div class="date-nav" th:if="${status == null or status == '' or status == 'PAID' or status == 'CANCELLED'}">
+          <a class="date-nav-btn" th:href="@{/staff/orders(status=${status}, date=${prevDate}, keyword=${keyword})}" aria-label="前一天">‹</a>
+          <span class="date-nav-date">
+            <span th:text="${dateText}">10/04（日）</span>
+            <input type="date" class="date-nav-input" id="dbDateInput" name="date"
+                   th:value="${date}" th:max="${today}" aria-label="選擇日期">
+          </span>
+          <a class="date-nav-btn" th:if="${nextDate != null}"
+             th:href="@{/staff/orders(status=${status}, date=${nextDate}, keyword=${keyword})}" aria-label="後一天">›</a>
+          <span class="date-nav-btn is-disabled" th:if="${nextDate == null}">›</span>
+        </div>
 
-        <div id="orderList">
-          <p class="staff-empty" th:if="${#lists.isEmpty(orders)}">沒有符合條件的訂單</p>
+        <input type="search" class="staff-input" name="keyword" th:value="${keyword}"
+               placeholder="輸入桌號或訂單編號，按 Enter 搜尋" aria-label="搜尋訂單">
+      </form>
 
-          <div class="order-item" th:each="order : ${orders}">
-            <button type="button" class="order-row" data-toggle-order>
-              <span class="order-id" th:text="${order.id}">訂單編號</span>
-              <span><span class="badge badge-table" th:text="${order.table}">A1</span></span>
-              <span th:text="|${order.people} 人|">2 人</span>
-              <span th:text="${order.time}">12:30</span>
-              <span class="num order-amount" th:text="'$' + ${order.payAmount}">$1,246</span>
-              <span><span class="tag" th:classappend="${order.statusClass}" th:text="${order.statusText}">用餐中</span></span>
+      <section class="staff-card">
+        <!-- 欄位名稱（手機寬度時隱藏） -->
+        <div class="order-row order-row-head">
+          <span>訂單編號</span><span>會員名稱</span><span>桌號</span><span>下單時間</span><span class="num">金額</span><span>狀態</span><span></span>
+        </div>
+
+        <!-- 每一筆訂單一列，點一下可以展開餐點明細。
+             明細一開始是 hidden，展開／收合不需要後端（程式在 orders.js）。 -->
+        <div id="dbOrderList">
+          <p class="staff-empty" th:if="${#lists.isEmpty(orderslistAll)}">沒有符合條件的訂單</p>
+
+          <div class="order-item" th:each="order : ${orderslistAll}">
+            <button type="button" class="order-row" data-toggle-order aria-expanded="false">
+              <span class="order-id" th:text="${#numbers.formatInteger(order.orders,8)}">訂單編號</span>
+              <!-- 會員名稱：標籤和名字放在同一格（同一個 span 裡，才不會多出一格、把後面的欄位擠歪），標籤就會一直貼著名字
+                   有會員 → 綠色「會員」＋名字（沒填姓名顯示手機）；沒有 → 只有灰色「非會員」
+                   樣式是 staff.css 的 .tag-green、.tag-gray -->
+              <span class="order-member">
+                <span class="tag" th:classappend="${order.member != null} ? 'tag-green' : 'tag-gray'"
+                      th:text="${order.member != null} ? '會員' : '非會員'">非會員</span>
+                <span th:if="${order.member != null}"
+                      th:text="${order.member.memName != null and !order.member.memName.isBlank()} ? ${order.member.memName} : ${order.member.memTel}">王小明</span>
+              </span>
+              <span><span class="badge badge-table" th:text="${order.seatNo.seatNo}">A1</span></span>
+              <span th:text="${#temporals.format(order.ordersTime,'HH:mm')}">12:30</span>
+              <span class="num order-amount" th:text="'$' + ${order.ordersActualPrice}">$1,246</span>
+              <span th:switch="${order.status}">
+				  <span class="tag tag-yellow" th:case="'ACTIVE'">用餐中</span>
+				  <span class="tag tag-red" th:case="'DONE'">待結帳</span>
+				  <span class="tag tag-green" th:case="'PAID'">已結帳</span>
+				  <span class="tag tag-gray" th:case="'CANCELLED'">已取消</span>
+				  <span class="tag tag-green" th:if="${order.status == 'ACTIVE' and !#strings.isEmpty(order.ordersPay)}">已付款</span>
+			  </span>
               <span class="order-icon">+</span>
             </button>
 
             <div class="order-detail" hidden>
-              <p class="order-detail-note" th:if="${order.note}" th:text="|備註：${order.note}|">備註</p>
               <table class="receipt-table">
-                <thead><tr><th>品項</th><th class="num">數量</th><th class="num">小計</th><th class="num">折扣</th><th>狀態</th></tr></thead>
+                <thead><tr><th>品項</th><th class="num">數量</th><th class="num">單價</th><th class="num">金額</th><th class="num">折扣</th><th class="col-fit">狀態</th><th class="col-fit">送達時間</th></tr></thead>
                 <tbody>
-                  <tr th:each="item : ${order.items}" th:classappend="${item.cancelled} ? 'row-cancelled'">
+                  <!-- 被取消的餐點仍然列出來（整列劃線變淡） -->
+                  <tr th:each="item : ${order.ordersDetails}" th:classappend="${item.odStatus == '已取消'} ? 'row-cancelled'">
                     <td>
-                      <span class="dish-tag" th:text="${item.category}">主菜</span>
-                      <span th:text="${item.name}">品名</span>
-                      <small class="dish-note" th:if="${item.note}" th:text="${item.note}">備註</small>
+                      <span class="dish-tag" th:if="${item.meal.mealType != null}" th:text="${item.meal.mealType.mealtypeName}">主菜</span><!-- 刪除的菜品類別是 null：不顯示類別標籤 -->
+                      <span th:text="${item.meal.mealName}">品名</span>
+                      <small class="dish-note" th:if="${!#strings.isEmpty(item.odComment)}" th:text="${item.odComment}">備註</small>
                     </td>
-                    <td class="num" th:text="|× ${item.qty}|">× 1</td>
-                    <td class="num" th:text="'$' + ${item.price * item.qty}">$620</td>
-                    <td class="num discount" th:text="${item.discount > 0} ? |-${item.discount}| : ''"></td>
-                    <td th:text="${item.statusText}">已送達</td>
+                    <td class="num" th:text="|× ${item.odMealNum}|">× 1</td>
+                    <td class="num" th:text="'$'+ ${item.odDiscountPrice}">$620</td>
+                    <td class="num" th:text="'$'+ ${item.odDiscountPrice *item.odMealNum}">$1240</td>
+                    <td class="num discount" th:text="${item.odDiscountTotal}">0</td>
+                    <!-- col-fit：狀態、送達時間只佔剛好的寬度，兩欄才會靠在一起（樣式在 orders.css） -->
+                    <td class="col-fit" th:text="${item.odStatus}">已送達</td>
+                    <!-- 送達時間：外場按「確認送達」時記下的時間（odServedAt），客訴上菜太慢時可以對照下單時間
+                         只有「已送達」而且有記到時間才顯示；製作中、等待送餐、已取消、舊資料沒有時間 → 「—」 -->
+                    <td class="col-fit" th:text="${item.odStatus == '已送達' and item.odServedAt != null} ? ${#temporals.format(item.odServedAt,'HH:mm')} : '—'">12:40</td>
                   </tr>
                 </tbody>
               </table>
+              <!-- 活動折扣（整單打折）：有參加才顯示這一行（活動名稱、幾折）；沒參加就整行不出現
+                   資料是 Controller 放的 orderPromotes（訂單編號 → OrderPromoteDTO，和結帳頁的 orderPromote 是同一個小物件）
+                   折掉的金額不另外顯示：已經算在下面的「折扣金額」裡
+                   th:if 會比 th:with 先算，所以 th:if 裡不能用 op，要直接寫 orderPromotes[order.orders] -->
+              <p class="order-detail-promo" th:if="${orderPromotes != null and orderPromotes[order.orders] != null}"
+                 th:with="op=${orderPromotes[order.orders]}">
+                <span class="order-detail-promo-label">活動折扣</span>
+                <span class="order-detail-promo-name" th:text="${op.promoteName}">母親節感恩祭</span>
+                <span class="order-detail-promo-zhe"
+                      th:text="|全單 ${op.promoteDisc % 10 == 0 ? op.promoteDisc / 10 : op.promoteDisc} 折|">全單 85 折</span>
+              </p>
               <p class="order-detail-sum">
-                總價、總折扣、實付金額與結帳或取消的資訊，用 th:text 顯示
+                總金額 <span th:text="'$' +${order.ordersTotal}">$0</span>　折扣金額 <span th:text="'$' + ${order.ordersDiscountTotal}">$0</span>　
+                實付金額<strong th:text="'$' +${order.ordersActualPrice}">$0</strong>
+                <span class="order-detail-pay" th:text="${#strings.isEmpty(order.ordersPay)} ? '尚未結帳' : ${order.ordersPay}">尚未結帳</span>
               </p>
             </div>
           </div>
         </div>
+      </section>
+    </div>
 
-           狀態的中文與顏色請在 Java 準備好：
-             order.statusText   用餐中／待結帳／已結帳／已取消
-             order.statusClass  tag-yellow／tag-red／tag-green／tag-gray（對應上面四種）
-             item.statusText    製作中／等待送餐／已送達／已取消
-           明細一開始是 hidden，點一下那一列才展開。這個展開的動作不需要後端，
-           staff-orders.js 改成只做這件事即可（見該檔案第 1 區的提示）。 -->
-      <div id="orderList"></div>
-    </section>
   </main>
 
   <div class="staff-toast" id="staffToast" role="status" aria-live="polite"></div>

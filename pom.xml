@@ -8,14 +8,14 @@
 		<version>4.0.6</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>com.bistroops</groupId>
-  <artifactId>TKA102-05-Webapp</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
-  <packaging>war</packaging>
-	<name>TKA102-05-Webapp  Maven Webapp</name>
-	<description>demo</description>
+	<groupId>bistroops</groupId>
+	<artifactId>bistroops</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<packaging>war</packaging>
+	<name>bistroops</name>
+	<description>bistroops</description>
 	<properties>
-		<java.version>17</java.version>
+		<java.version>25</java.version>
 	</properties>
 	<dependencies>
 		<dependency><!-- ＠用途說明2: Add typical dependencies for a web application -->
@@ -74,6 +74,23 @@
 			<!-- <version>4.0.6</version> -->
 		</dependency>
 		
+		<!-- Redis -->
+		<dependency>
+		    <groupId>org.springframework.boot</groupId>
+		    <artifactId>spring-boot-starter-data-redis</artifactId>
+		</dependency>
+		
+		<!-- 使用 Redis 儲存 HTTP Session -->
+		<dependency>
+		    <groupId>org.springframework.session</groupId>
+		    <artifactId>spring-session-data-redis</artifactId>
+		</dependency>
+		
+		<!-- Spring Security 密碼雜湊（DelegatingPasswordEncoder，預設使用 BCrypt） -->
+		<dependency>
+		    <groupId>org.springframework.security</groupId>
+		    <artifactId>spring-security-crypto</artifactId>
+		</dependency>
 		<!-- ========================================================================================== -->
 		<!-- ●前面的jpa已經包含有hibernate，以下為純 hibernate 使用● -->
 
@@ -110,14 +127,6 @@
 			<scope>provided</scope>                  <!-- ※provided只提供編譯，jar檔不匯出 -->
 		</dependency>
 
-		<!-- JSP API -->                             <!-- spring-boot 未內建依賴，JspException/PageContext 等類別在此 -->
-		<dependency>
-			<groupId>jakarta.servlet.jsp</groupId>
-			<artifactId>jakarta.servlet.jsp-api</artifactId>
-			<version>3.1.1</version>
-			<scope>provided</scope>
-		</dependency>
-
 		<!-- JSTL -->                                <!-- spring-boot 已內建依賴，但預設未下載 -->
 		<dependency>
 			<groupId>org.glassfish.web</groupId>
@@ -138,6 +147,10 @@
 			<artifactId>jakarta.websocket-api</artifactId>
 			<!-- <version>2.2.0</version> -->
 			<scope>provided</scope>                  <!-- ※provided只提供編譯，jar檔不匯出 -->
+		</dependency>
+		<dependency>
+		    <groupId>org.springframework.boot</groupId>
+    		<artifactId>spring-boot-starter-websocket</artifactId>
 		</dependency>
 
 		<!-- javax.json -->                          <!-- spring-boot 未內建依賴 -->
@@ -265,19 +278,24 @@
         
         <!-- ●●●Spring Security-->  
         <!-- ●●●沒用到時請勿下載-->
-       <dependency>
+     	<dependency>
            <groupId>org.springframework.boot</groupId>
            <artifactId>spring-boot-starter-security</artifactId>
-       </dependency>
+        </dependency>
         
         <!-- ●●●thymeleaf Spring Security--> 
-        <!-- ●●●與前面配合使用，沒用到時不用下載 -->
+        <!-- ●●●與前面配合使用，沒用到時不用下載-->
         <!-- ●●●如果是舊版 Spring Boot 2.x，請使用 springsecurity5 -->
-       <!-- <dependency>
-           <groupId>org.thymeleaf.extras</groupId>
-           <artifactId>thymeleaf-extras-springsecurity6</artifactId>
-       </dependency> -->
-
+<!--        <dependency>-->
+<!--            <groupId>org.thymeleaf.extras</groupId>-->
+<!--            <artifactId>thymeleaf-extras-springsecurity6</artifactId>-->
+<!--        </dependency>-->
+<!-- QR Code 產生器 -->
+		<dependency>
+		    <groupId>com.google.zxing</groupId>
+		    <artifactId>core</artifactId>
+		    <version>3.5.4</version>
+		</dependency>
 	</dependencies>
 
 	<build>

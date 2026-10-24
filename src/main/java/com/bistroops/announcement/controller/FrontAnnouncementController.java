@@ -12,18 +12,23 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 import com.bistroops.announcement.model.AnnouncementService;
 import com.bistroops.announcement.model.AnnouncementVO;
+import com.bistroops.announcement.model.NewsArticleService;
 
-// 前台(顧客)公告：只能瀏覽已開始的公告
+// 前台(顧客)公告：只能瀏覽已開始的公告；列表頁也會列出進行中的活動
 @Controller
-@RequestMapping("/announcement")
+@RequestMapping("/bistroops/announcement")
 public class FrontAnnouncementController {
 
 	@Autowired
 	private AnnouncementService annService;
 
+	@Autowired
+	private NewsArticleService newsArticleService;
+
+	// 最新消息列表：公告＋活動整理成 article（見 NewsArticleService）
 	@GetMapping("")
 	public String list(Model model) {
-		model.addAttribute("annList", annService.getPublished());
+		model.addAttribute("articleList", newsArticleService.getArticles());
 		return "front/announcement/listAll";
 	}
 
@@ -33,11 +38,12 @@ public class FrontAnnouncementController {
 
 		// 查無資料或尚未開始，導回公告列表
 		if (ann == null) {
-			return "redirect:/announcement";
+			return "redirect:/bistroops/announcement";
 		}
 
-		model.addAttribute("ann", ann);
-		return "front/announcement/detail";
+		// news-detail.html 公告和活動共用，所以整理成同樣欄位的 article（活動在 FrontPromoteController）
+		model.addAttribute("article", newsArticleService.toArticle(ann));
+		return "front/announcement/news-detail";
 	}
 
 	@GetMapping("/image/{annNo}")

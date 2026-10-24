@@ -5,15 +5,20 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Bistroops 後台｜結帳</title>
-  <link rel="icon" th:href="@{/common/images/logo-mark.svg}" type="image/svg+xml">
+  <link rel="icon" th:href="@{/images/logo-mark.svg}" type="image/svg+xml">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet"
     href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&display=swap">
-  <link rel="stylesheet" th:href="@{/staff/common/css/staff.css}" />
-  <script th:src="@{/staff/common/js/staff.js}" defer></script>
-  <script th:src="@{/staff/checkout/js/staff-checkout.js}" defer></script>
+  <!-- staff.css：後台共用；checkout.css：這一頁自己的樣式（要寫在 staff.css 後面） -->
+  <link rel="stylesheet" th:href="@{/css/staff/staff.css}" />
+  <link rel="stylesheet" th:href="@{/css/staff/checkout.css}" />
+  <script th:src="@{/js/staff/staff.js}" defer></script>
+    <!-- 產生 QR Code 的套件 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
+
+  
 </head>
 
 <body class="staff-layout">
@@ -30,103 +35,238 @@
 
     <div class="checkout">
 
-      <!-- 左：尚未結帳的訂單，每一列由 staff-checkout.js 產生 -->
-      <!-- 【Thymeleaf 串接】清單改用 th:each 產生。Controller 把未結帳、未取消的訂單放進 Model（名稱 orders）。
-           把下面 id="checkoutList" 的那行 div 換成：
+      <!-- ==================== 左：尚未結帳的訂單 ==================== -->
+      <div class="checkout-col">
 
-        <div class="checkout-list" id="checkoutList">
-          <p class="staff-empty" th:if="${#lists.isEmpty(orders)}">目前沒有未結帳的訂單</p>
+        <section class="staff-card checkout-list-card" th:if="${checkoutListout != null}">
+          <h2 class="staff-card-title">未結帳的訂單</h2>
+          <div class="checkout-list">
+            <p class="staff-empty" th:if="${#lists.isEmpty(checkoutListout)}">目前沒有未結帳的訂單</p>
 
-          <div class="checkout-row" th:each="o : ${orders}"
-               th:classappend="${order != null and order.id == o.id} ? 'selected'">
-            <span class="badge badge-table" th:text="${o.table}">A1</span>
-            <span class="badge" th:text="|${o.people} 人|">2 人</span>
-            <span class="checkout-row-info">
-              <span class="checkout-row-id" th:text="${o.id}">訂單編號</span>
-              <span class="tag" th:classappend="${o.allServed} ? 'tag-red' : 'tag-yellow'"
-                    th:text="${o.allServed} ? '待結帳' : '用餐中'">用餐中</span>
-            </span>
-            <span class="checkout-row-amount" th:text="'$' + ${o.payAmount}">$1,246</span>
-            <a class="staff-btn btn-pay" th:href="@{/staff/checkout(order=${o.id})}">結帳</a>
+            <div class="checkout-row" th:each="o : ${checkoutListout}"
+                 th:classappend="${order != null and order.orders == o.orders} ? 'selected'">
+              <span class="badge badge-table" th:text="${o.seatNo.seatNo}">A1</span>
+              <span class="checkout-row-info">
+                <span class="checkout-row-id" th:text="${o.orders}">訂單編號</span>
+                <span class="tag" th:classappend="${o.status=='DONE'} ? 'tag-red' : 'tag-yellow'"
+                      th:text="${o.status=='DONE'} ? '待結帳' : '用餐中'">用餐中</span>
+                <!-- 有沒有輸入會員：訂單的 member 有值 → 綠色「會員」；null → 灰色「非會員」（樣式是 staff.css 的 .tag-green、.tag-gray） -->
+                <span class="tag" th:classappend="${o.member != null} ? 'tag-green' : 'tag-gray'"
+                      th:text="${o.member != null} ? '會員' : '非會員'">非會員</span>
+              </span>
+              <span class="checkout-row-amount" th:text="'$' + ${#numbers.formatInteger(o.ordersActualPrice,1,'COMMA')}">$1,246</span>
+              <a class="staff-btn btn-pay" th:href="@{/staff/checkout(order=${o.orders})}">結帳</a>
+            </div>
           </div>
-        </div>
+        </section>
+      </div>
 
-           「結帳」是連結，網址帶上訂單編號；Controller 收到 order 參數時，
-           把那一筆訂單也放進 Model（名稱 order），右邊就會顯示它的明細。
-           o.allServed（餐點是否全部送達）和 o.payAmount（實付金額）請在 Java 算好。 -->
-      <section class="staff-card checkout-list-card">
-        <h2 class="staff-card-title">未結帳的訂單</h2>
-        <div class="checkout-list" id="checkoutList"></div>
-      </section>
+      <!-- ==================== 右：餐點明細 ==================== -->
+      <div class="checkout-col checkout-col-receipt">
 
-      <!-- 右：餐點明細。按了某一列的「結帳」才會顯示內容 -->
-      <!-- 【Thymeleaf 串接】明細改用 Model 裡的 order 顯示（沒有選訂單時 order 是 null）：
-           1. 「請從左邊選擇」那一行加上 th:if="${order == null}"
-           2. receiptBody 那個 div 的 hidden 改成 th:if="${order != null}"；
-              外層 section 加上 th:classappend="${order != null} ? 'open'"（直立的平板靠這個 class 把明細蓋在清單上）
-           3. 右上角的 × 改成連結 <a class="receipt-close" th:href="@{/staff/checkout}">×</a>
-           4. 桌號、人數、訂單編號、下單時間、總折扣、總價、實付金額都加上 th:text，例如
-                <span class="badge badge-table" th:text="${order.table}">A1</span>
-           5. 餐點那幾列改成（被取消的餐點不要列出來，請在 Java 先排除，或加 th:unless="${item.cancelled}"）：
-                <tr th:each="item : ${order.items}">
-                  <td th:text="${item.name}">品名</td>
-                  <td class="num" th:text="${item.qty}">1</td>
-                  <td class="num" th:text="${item.price}">620</td>
-                  <td class="num discount" th:text="${item.discount > 0} ? |-${item.discount}| : ''"></td>
+                <section class="staff-card receipt" th:if="${checkoutListout != null}" th:classappend="${order != null} ? 'open'">
+          <p class="receipt-empty" th:if="${order == null}">請從左邊選擇要結帳的訂單</p>
+
+          <div class="receipt-body" th:if="${order != null}">
+            <a class="receipt-close" th:href="@{/staff/checkout}" aria-label="關閉餐點明細">×</a>
+
+            <div class="receipt-top">
+              <span class="badge badge-table" th:text="${order.seatNo.seatNo}">A1</span>
+              <h2 class="receipt-title">餐點明細</h2>
+            </div>
+            <p class="receipt-meta">訂單編號：<span th:text="${#numbers.formatInteger(order.orders,8)}"></span></p>
+            <p class="receipt-meta">下單時間：<span th:text="${order.ordersTime}"></span></p>
+            <!-- 這張訂單的會員：結帳前再確認一次有沒有綁對人
+                 有會員 → 綠色標籤顯示名字（沒填姓名就顯示手機）；沒有 → 灰色「非會員」 -->
+            <p class="receipt-meta">會員：
+              <span class="tag tag-green" th:if="${order.member != null}"
+                    th:text="${order.member.memName != null and !order.member.memName.isBlank()} ? ${order.member.memName} : ${order.member.memTel}">王小明</span>
+              <span class="tag tag-gray" th:if="${order.member == null}">非會員</span>
+            </p>
+
+            <table class="receipt-table">
+              <thead>
+                <tr><th>品項</th><th class="num">數量</th><th class="num">單價</th><th class="num">金額</th><th class="num">折扣</th></tr>
+              </thead>
+              <tbody>
+                <!-- 被取消的餐點不列在明細上（也可以在 Java 先排除，那 th:unless 就不需要了） -->
+                <tr th:each="item : ${order.ordersDetails}" th:unless="${item.odStatus == '已取消'}">
+                  <td th:text="${item.meal.mealName}">品名</td>
+                  <td class="num" th:text="${item.odMealNum}">1</td>
+                  <td class="num" th:text="${item.odDiscountPrice}">620</td>
+                  <td class="num" th:text="${item.odDiscountPrice * item.odMealNum}">620</td>
+                  <td class="num discount" th:text="${item.odDiscountTotal!=null and item.odDiscountTotal > 0} ? |-${item.odDiscountTotal}| : ''"></td>
                 </tr>
-           6. 「還有餐點尚未送達」的提醒：hidden 改成 th:if="${!order.allServed}"
-           7. 刷卡／現金：兩顆按鈕包在同一個表單裡，按哪一顆，Controller 的 method 就收到那顆的 value
-                <form th:action="@{/staff/checkout/pay}" method="post">
-                  <input type="hidden" name="orderId" th:value="${order.id}">
-                  <button type="submit" class="staff-btn btn-card" name="method" value="刷卡">刷卡</button>
-                  <button type="submit" class="staff-btn btn-cash" name="method" value="現金">現金</button>
+                <!-- 整單折扣（有加入才顯示）：品項＝活動名稱、數量＋單價合併一格寫全單折扣幾折、折扣＝整單扣掉的金額 -->
+                <tr class="promo-row" th:if="${orderPromote != null}">
+                  <td th:text="${orderPromote.promoteName}">週年慶</td>
+                  <td class="promo-row-zhe" colspan="2"
+                      th:text="|全單折扣${orderPromote.promoteDisc % 10 == 0 ? orderPromote.promoteDisc / 10 : orderPromote.promoteDisc}折|">全單折扣8折</td>
+                  <td class="num"></td>
+                  <td class="num discount" th:text="|-${orderPromote.discountAmount}|">-200</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <!-- ================================================================
+               活動折扣（明細表格下方、總金額上方的那一行＋下面的 promoteDialog 對話框；程式在 staff.js 的 A-10，樣式在 checkout.css 最下面）
+               Controller（OrdersController.checkout）放進 Model 的資料：
+                 promoteOptions   進行中、而且有設定整單折數的活動：promoteNo、promoteName、promoteDisc（百分比 10～90，80＝8 折、85＝85 折）、promoteRule（條件，沒有是 null）
+                 orderPromote     這張訂單已經用的活動折扣，沒用是 null：promoteName、promoteDisc（折數快照）、
+                                  discountAmount（折掉的金額，四捨五入到元）、autoApplied（活動沒有條件 → true）
+               ※ 沒有條件的活動，客人送單建立訂單時就會自動套用（FrontOrderService.submitOrder），
+                 店員可以取消，或改選別的活動（會換掉自動套用的那個）
+               送出的網址（staff.js A-10 在背景送出，不整頁重新整理）：
+                 POST /staff/checkout/promote          欄位 order、promoteNo：加入（或換成）這個活動折扣
+                 POST /staff/checkout/promote/remove   欄位 order：取消活動折扣
+                 結果訊息（flash 的 promoteMsg）放在下面的 data-promote-msg，用小提示顯示
+               ================================================================ -->
+            <!-- 明細表格下方、總金額上方的「整單折扣」那一行 -->
+            <div class="promo-line" data-promote-line
+                 th:attr="data-promote-msg=${promoteMsg}">
+              <span class="promo-line-label">活動折扣</span>
+
+              <!-- 已經加入整單折扣（Controller 有放 orderPromote）：名稱、折數、金額顯示在上面明細表格的最後一列，這裡只留取消折扣 -->
+              <th:block th:if="${orderPromote != null}">
+                <span class="tag tag-green promo-line-auto" th:if="${orderPromote.autoApplied}">活動無條件限制自動套用</span>
+                <form class="promo-line-form" th:action="@{/staff/checkout/promote/remove}" method="post" data-promote-ajax
+                      data-confirm="確定要取消這張訂單的整單折扣嗎？" data-loading=".receipt">
+                  <input type="hidden" name="order" th:value="${order.orders}">
+                  <button type="submit" class="staff-btn">取消折扣</button>
                 </form>
-              Controller 把訂單標記成已結帳、記下付款方式與時間後，redirect 回 /staff/checkout。
-           改完後，staff-checkout.js 只需要留下「送出前跳確認視窗」的程式（見該檔案第 3 區的提示）。 -->
-      <section class="staff-card receipt" id="receipt">
-        <!-- 還沒選訂單時顯示這段 -->
-        <p class="receipt-empty" id="receiptEmpty">請從左邊選擇要結帳的訂單</p>
+              </th:block>
 
-        <div class="receipt-body" id="receiptBody" hidden>
-          <button type="button" class="receipt-close" id="receiptClose" aria-label="關閉餐點明細">×</button>
+              <!-- 還沒加入整單折扣：顯示「未使用」和「加入折扣」（打開下面的對話框） -->
+              <th:block th:if="${orderPromote == null}">
+                <span class="promo-line-none" data-promote-none>未使用</span>
+                <button type="button" class="staff-btn promo-line-btn" data-promote-open>加入活動折扣</button>
+              </th:block>
+            </div>
 
-          <div class="receipt-top">
-            <span class="badge badge-table" id="receiptTable">A1</span>
-            <span class="badge" id="receiptPeople">2 人</span>
-            <h2 class="receipt-title">餐點明細</h2>
+            <dl class="receipt-sum">
+              <div><dt>總價</dt><dd th:text="${order.ordersTotal}">0</dd></div>
+              <div><dt>總折扣</dt><dd th:text="${order.ordersDiscountTotal}">0</dd></div>
+              <div class="receipt-pay"><dt>實付金額</dt><dd th:text="'$' + ${order.ordersActualPrice}">$0</dd></div>
+            </dl>
+
+            <!-- 這桌還有餐點沒送達時顯示的提醒 -->
+            <p class="receipt-warn" th:if="${order.status=='ACTIVE'}">這桌還有餐點尚未送達</p>
+
+            <form class="receipt-actions" th:action="@{/staff/checkout/pay}" method="post"
+                  th:attr="data-confirm=|${order.seatNo.seatNo} 桌收款 ${order.ordersActualPrice} 元，確定結帳嗎？|" data-loading=".receipt">
+              <input type="hidden" name="order" th:value="${order.orders}">
+              
+              <!-- 會員：打開下面的 memberDialog 輸入手機號碼（type="button"，不會送出結帳表單） -->
+              <button type="button" class="staff-btn" id="btnMember">會員</button>
+              <button type="submit" class="staff-btn btn-card" th:formaction="@{/staff/checkout/card}" formtarget="ecpayWin">刷卡</button> 
+              <button type="submit" class="staff-btn btn-cash" name="method" value="現金">現金</button>
+               <!-- 回饋 QR：產生這張訂單的回饋 QR Code，給客人掃描 -->
+              <button type="button" class="staff-btn btn-feedback-qr" id="btnFeedbackQr"
+                    th:data-order="${order.orders}"
+                    th:data-url="@{/staff/feedback/qr}">回饋 QR</button>
+            </form>
           </div>
-          <p class="receipt-meta">訂單編號：<span id="receiptId"></span></p>
-          <p class="receipt-meta">下單時間：<span id="receiptTime"></span></p>
+        </section>
 
-          <table class="receipt-table">
-            <thead>
-              <tr><th>品項</th><th class="num">數量</th><th class="num">單價</th><th class="num">折扣</th></tr>
-            </thead>
-            <!-- 每一道餐點一列，由 staff-checkout.js 產生 -->
-            <tbody id="receiptItems"></tbody>
-          </table>
-
-          <dl class="receipt-sum">
-            <div><dt>總折扣</dt><dd id="receiptDiscount">0</dd></div>
-            <div><dt>總價</dt><dd id="receiptTotal">0</dd></div>
-            <div class="receipt-pay"><dt>實付金額</dt><dd id="receiptPay">0</dd></div>
-          </dl>
-
-          <!-- 這桌還有餐點沒送達時顯示的提醒 -->
-          <p class="receipt-warn" id="receiptWarn" hidden>這桌還有餐點尚未送達</p>
-
-          <div class="receipt-actions">
-            <!-- 會員：還沒做，先留按鈕。
-                 【Thymeleaf 串接】之後要做會員折扣時，把 data-coming-soon 拿掉，
-                 改成輸入會員手機的小表單送到 Controller，由 Controller 算好折扣後回到這一頁 -->
-            <button type="button" class="staff-btn" data-coming-soon="會員">會員</button>
-            <button type="button" class="staff-btn btn-card" data-pay="刷卡">刷卡</button>
-            <button type="button" class="staff-btn btn-cash" data-pay="現金">現金</button>
-          </div>
-        </div>
-      </section>
+      </div>
 
     </div>
+		<dialog id="qrDialog" class="qr-dialog">
+		  <button type="button" class="qr-close no-print" id="btnQrClose" aria-label="關閉">&times;</button>
+		
+		  <h2 class="staff-card-title">掃描填寫回饋</h2>
+		  <p class="qr-meta">訂單編號：<span id="qrOrder"></span></p>
+		  <p class="qr-meta"><span id="qrMember" class="badge"></span></p>
+		  <div id="qrBox" class="qr-box"></div>
+		  <p class="qr-tip">請客人用手機相機掃描，7 天內有效</p>
+		
+		  <div class="qr-actions no-print">
+		    <button type="button" class="staff-btn" id="btnQrPrint">列印</button>
+		  </div>
+		</dialog>
+
+		
+		<!-- 加入整單折扣的對話框：一次只能選一個（radio），按「確認加入」送出 -->
+		<dialog class="promo-dialog" id="promoteDialog" th:if="${order != null}">
+		  <button type="button" class="member-close" data-promote-close aria-label="關閉">&times;</button>
+		  <h2 class="staff-card-title">加入整單折扣</h2>
+		  <p class="promo-dialog-tip">請先確認客人符合活動條件。一張訂單只能使用一個整單折扣。</p>
+
+		  <form th:action="@{/staff/checkout/promote}" method="post" data-promote-form data-promote-ajax data-loading=".promo-dialog">
+		    <input type="hidden" name="order" th:value="${order.orders}">
+
+		    <div class="promo-options" data-promote-options>
+		      <th:block th:if="${promoteOptions != null}">
+		        <label class="promo-option" th:each="p : ${promoteOptions}">
+		          <input type="radio" name="promoteNo" th:value="${p.promoteNo}" required>
+		          <span class="promo-option-body">
+		            <span class="promo-option-head">
+		              <strong th:text="${p.promoteName}">週年慶</strong>
+		              <span class="promo-option-zhe"
+		                    th:text="|${p.promoteDisc % 10 == 0 ? p.promoteDisc / 10 : p.promoteDisc} 折|">8 折</span>
+		            </span>
+		            <small th:text="${p.promoteRule != null ? '條件：' + p.promoteRule : '無條件'}">條件：消費滿 1000 元</small>
+		          </span>
+		        </label>
+		      </th:block>
+		    </div>
+		    <p class="promo-empty" data-promote-empty
+		       th:hidden="${promoteOptions == null or !#lists.isEmpty(promoteOptions)}">目前沒有可以使用的整單折扣活動</p>
+
+		    <div class="member-actions">
+		      <button type="button" class="staff-btn" data-promote-close>取消</button>
+		      <button type="submit" class="staff-btn btn-pay">確認加入</button>
+		    </div>
+		  </form>
+		</dialog>
+
+		<dialog id="memberDialog" class="member-dialog" th:if="${order != null}">
+		  <button type="button" class="member-close" id="btnMemberClose" aria-label="關閉">&times;</button>
+
+		  <h2 class="staff-card-title">請輸入手機號碼</h2>
+		  <p class="qr-meta">訂單編號：<span th:text="${#numbers.formatInteger(order.orders,8)}"></span></p>
+
+		  <!-- 這張訂單目前有沒有會員：客人登入會員點餐，或之前已經用手機綁定過，order.member 就有資料
+		       沒填姓名的會員改顯示手機號碼 -->
+		  <p class="member-current" th:if="${order.member != null}">
+		    <span class="badge">會員</span>
+		    <strong th:text="${order.member.memName != null and !order.member.memName.isBlank()} ? ${order.member.memName} : ${order.member.memTel}">王小明</strong>
+		  </p>
+		  <p class="member-current" th:if="${order.member == null}">
+		    <span class="badge">非會員</span> 這張訂單還沒有會員
+		  </p>
+
+		  <!-- 查詢結果：輸入滿 10 碼後，staff.js 向 data-lookup-url 查詢，在這裡顯示會員名稱或「查無此會員」 -->
+		  <p class="member-result" id="memberResult" hidden></p>
+
+		  <!-- novalidate：不用瀏覽器內建的提示泡泡，改由 staff.js 顯示下面的 memberError -->
+		  <form id="memberForm" th:action="@{/staff/checkout/member}" method="post" novalidate
+		        th:data-lookup-url="@{/staff/checkout/member/lookup}" data-loading=".member-dialog">
+		    <input type="hidden" name="order" th:value="${order.orders}">
+		    <label class="member-label" for="memberPhone">會員手機</label>
+		    <input type="tel" class="member-input" id="memberPhone" name="phone"
+		           inputmode="numeric" maxlength="10" pattern="09\d{8}"
+		           placeholder="09xxxxxxxx" autocomplete="off" required>
+		    <p class="member-error" id="memberError" hidden>※請輸入 09 開頭的 10 碼手機號碼</p>
+
+		    <div class="member-actions">
+		      <button type="button" class="staff-btn" id="btnMemberCancel">取消</button>
+		      <button type="submit" class="staff-btn btn-member-submit">確認</button>
+		    </div>
+		  </form>
+		</dialog>
+
+		<dialog id="msgDialog" class="msg-dialog">
+		  <div class="dlg-head">提示</div>
+		  <div class="dlg-body">
+		    <p id="msgDialogText"></p>
+		  </div>
+		  <div class="dlg-foot">
+		    <button type="button" class="staff-btn" id="btnMsgClose">關閉</button>
+		  </div>
+		</dialog>
+		
+
   </main>
 
   <div class="staff-toast" id="staffToast" role="status" aria-live="polite"></div>

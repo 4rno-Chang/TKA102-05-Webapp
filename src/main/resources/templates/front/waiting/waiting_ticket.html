@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Bistroops｜候位號碼牌</title>
+
+<link rel="icon" th:href="@{/images/logo-mark.svg}" type="image/svg+xml">
+
+<link rel="stylesheet" th:href="@{/css/front/front.css}">
+<link rel="stylesheet" th:href="@{/css/front/member.css}">
+<link rel="stylesheet" th:href="@{/css/front/waiting.css}">
+<link rel="stylesheet" th:href="@{/css/front/booking-loading.css}">
+
+<script th:src="@{/js/front/member.js}" defer></script>
+<script th:src="@{/js/front/announcement.js}" defer></script>
+<script th:src="@{/js/front/booking-loading.js}" defer></script>
+<script th:src="@{/js/front/waiting.js}" defer></script>
+</head>
+
+<body>
+	<div th:replace="~{front/member/member_modals :: modals}"></div>
+	<header th:replace="~{front/front_layout :: header('waiting')}"></header>
+
+	<main class="booking">
+		<div class="container">
+
+			<header class="booking-head">
+				<p class="eyebrow">Waiting List</p>
+				<h1 class="booking-title">候位號碼牌</h1>
+				<p class="booking-lead">請留意現場叫號。</p>
+			</header>
+
+			<p class="form-msg error" th:if="${error != null}" th:text="${error}">
+			</p>
+
+			<p class="form-msg" th:if="${message != null}" th:text="${message}">
+			</p>
+
+			<section class="booking-result ticket" id="ticketBox"
+				th:attr="data-auto-refresh=${ticket.active}">
+
+				<p class="ticket-label" th:text="|${ticket.tableType} 人桌　您的號碼|">
+				</p>
+
+				<p class="ticket-no" th:text="${ticket.number}"></p>
+
+				<dl class="summary-list">
+					<div>
+						<dt>狀態</dt>
+						<dd th:text="${ticket.statusText}"></dd>
+					</div>
+
+					<div th:if="${ticket.active}">
+						<dt>前面還有</dt>
+						<dd th:text="|${ahead} 組|"></dd>
+					</div>
+
+					<div th:if="${!#strings.isEmpty(ticket.name)}">
+						<dt>聯絡姓名</dt>
+						<dd th:text="${ticket.name}"></dd>
+					</div>
+
+					<div>
+						<dt>手機號碼</dt>
+						<dd th:text="${ticket.phone}"></dd>
+					</div>
+
+					<div>
+						<dt>備註</dt>
+						<dd class="waiting-note"
+							th:text="${#strings.isEmpty(ticket.note)
+                                ? '無' : ticket.note}">
+						</dd>
+					</div>
+				</dl>
+
+				<p class="result-notice" th:if="${ticket.status == 'NOTIFIED'}">
+					已叫到您的號碼，請立即向現場人員報到。 叫號後一分鐘未報到將自動過號。</p>
+
+				<p class="result-notice" th:if="${ticket.status == 'MISSED'}">
+					您的號碼已過號，請回到店門口重新掃描 QR Code 取號。</p>
+
+				<p class="result-notice">當日號碼於台灣時間午夜 00:00 失效。</p>
+
+				<form th:if="${ticket.active}"
+					th:action="@{/bistroops/waiting/cancel}" method="post"
+					data-confirm="確定要取消這張候位號碼牌嗎？" data-loading=".booking-result">
+
+					<input type="hidden" name="date" th:value="${ticket.date}">
+
+					<input type="hidden" name="tableType"
+						th:value="${ticket.tableType}"> <input type="hidden"
+						name="ticketId" th:value="${ticket.ticketId}"> <input
+						type="hidden" name="waitingCsrfToken"
+						th:value="${waitingCsrfToken}">
+
+					<button type="submit" class="btn-outline">取消候位</button>
+				</form>
+			</section>
+
+		</div>
+	</main>
+
+	<footer th:replace="~{front/front_layout :: footer}"></footer>
+</body>
+</html>

@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bistroops｜預約訂位</title>
+
+<link rel="icon" th:href="@{/images/logo-mark.svg}" type="image/svg+xml">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<link rel="stylesheet"
+	href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&family=Noto+Serif+TC:wght@500;600&display=swap">
+
+<link rel="stylesheet" th:href="@{/css/front/front.css}">
+<link rel="stylesheet" th:href="@{/css/front/member.css}">
+<link rel="stylesheet" th:href="@{/css/front/reservation.css}">
+<link rel="stylesheet" th:href="@{/css/front/booking-loading.css}">
+
+<script th:inline="javascript">
+	window.bistroopsReservationAvailability =
+	/*[[${reservationAvailability}]]*/{};
+</script>
+
+<script th:src="@{/js/front/member.js}" defer></script>
+<script th:src="@{/js/front/announcement.js}" defer></script>
+<script th:src="@{/js/front/booking-loading.js}" defer></script>
+<script th:src="@{/js/front/reservation-date.js}" defer></script>
+</head>
+
+<body>
+	<div th:replace="~{front/member/member_modals :: modals}"></div>
+	<header th:replace="~{front/front_layout :: header('reservation')}"></header>
+
+	<main class="booking">
+		<div class="container">
+
+			<header class="booking-head">
+				<p class="eyebrow">Reservation</p>
+				<h1 class="booking-title">預約訂位</h1>
+
+				<p class="booking-lead">選擇用餐日期、桌型與時段，安排你的下一次聚餐。</p>
+
+
+			</header>
+
+			<section id="reservationLookup" class="reservation-lookup">
+
+				<form th:action="@{/bistroops/reservation}" method="get" data-loading>
+
+					<label for="reservationLookupPhone"
+						class="reservation-lookup-label"> 訂位電話 </label>
+
+					<div class="reservation-lookup-row">
+						<input type="tel" id="reservationLookupPhone" name="lookupPhone"
+							inputmode="numeric" minlength="10" maxlength="10"
+							pattern="09[0-9]{8}" placeholder="請輸入訂位電話" autocomplete="tel"
+							required th:value="${lookupPhone}">
+
+						<button type="submit" class="btn-outline">查詢訂位</button>
+					</div>
+				</form>
+
+				<p class="form-msg error" th:if="${lookupError != null}"
+					th:text="${lookupError}"></p>
+
+				<div class="reservation-lookup-results"
+					th:if="${lookupPerformed and lookupError == null}">
+
+					<p class="booking-empty" th:if="${#lists.isEmpty(lookupList)}">
+						查無今天起的訂位紀錄。</p>
+
+					<article th:each="r : ${lookupList}"
+						class="reservation-lookup-item">
+
+						<p>
+							訂位編號： <strong th:text="${r.reservationNo}"></strong>
+						</p>
+
+						<p th:text="|${r.dateText} ${r.timeText}｜${r.tableType} 人桌|"></p>
+
+						<p th:text="|狀態：${r.status}|"></p>
+					</article>
+
+					<p class="reservation-lookup-note">如需變更或取消訂位，請聯絡餐廳。</p>
+				</div>
+			</section>
+
+
+			<ol class="booking-steps">
+				<li class="active"><span class="step-no">1</span>選擇日期與桌型</li>
+				<li><span class="step-no">2</span>填寫聯絡資料</li>
+				<li><span class="step-no">3</span>確認訂位</li>
+			</ol>
+
+			<div class="booking-layout">
+				<section class="booking-card">
+					<h2 class="booking-card-title">選擇日期與桌型</h2>
+
+					<form id="resvForm" th:action="@{/bistroops/reservation/contact}"
+						method="get" data-loading>
+
+						<input type="hidden" name="date" id="resvDate" th:value="${date}">
+
+						<p class="form-msg error" th:if="${error != null}"
+							th:text="${error}"></p>
+
+						<div class="booking-block">
+							<h3 class="booking-label">
+								用餐日期 <small>可預約含今日起算90天內的日期</small>
+							</h3>
+
+							<button type="button" class="date-field" id="calendarToggle"
+								aria-expanded="false" hidden>
+								<span class="date-field-value"></span> <span
+									class="date-field-action"> 開啟日曆 ▾ </span>
+							</button>
+
+							<div class="calendar" id="calendar"></div>
+
+							<p class="calendar-legend">
+								<span class="legend-dot legend-open"></span> 可預約 <span
+									class="legend-dot legend-closed"></span> 無可訂時段或已額滿
+							</p>
+						</div>
+
+						<div class="booking-block">
+							<h3 class="booking-label">
+								選擇桌型 <small>每次限訂1桌，多桌需求請來電預約</small>
+							</h3>
+
+							<div class="choice-row">
+								<label class="choice"> <input type="radio"
+									name="tableType" value="2" th:checked="${tableType == 2}">
+									<span class="choice-box">2 人桌</span>
+								</label> <label class="choice"> <input type="radio"
+									name="tableType" value="4" th:checked="${tableType == 4}">
+									<span class="choice-box">4 人桌</span>
+								</label> <label class="choice"> <input type="radio"
+									name="tableType" value="6" th:checked="${tableType == 6}">
+									<span class="choice-box">6 人桌</span>
+								</label>
+							</div>
+						</div>
+
+						<div class="booking-block">
+							<h3 class="booking-label">用餐時段</h3>
+
+							<p class="booking-empty" id="slotEmpty">請先選擇日期，以查看可預約的時段。</p>
+
+							<div class="slot-grid" id="slotGrid"></div>
+						</div>
+
+						<button type="submit" class="btn-solid" id="resvNext" disabled>
+							下一步：確認聯絡資料</button>
+					</form>
+				</section>
+
+				<aside class="booking-summary">
+					<h2 class="booking-card-title">訂位摘要</h2>
+
+					<dl class="summary-list">
+						<div>
+							<dt>日期</dt>
+							<dd id="sumDate">尚未選擇</dd>
+						</div>
+						<div>
+							<dt>桌型</dt>
+							<dd id="sumTable">2 人桌</dd>
+						</div>
+						<div>
+							<dt>時段</dt>
+							<dd id="sumTime">尚未選擇</dd>
+						</div>
+					</dl>
+
+					<p class="summary-status">目前尚未完成訂位</p>
+					<p class="summary-hint">剩餘桌數以頁面載入時為準，送出時會再次確認。</p>
+				</aside>
+			</div>
+
+
+
+			<section class="booking-rules">
+				<h2 class="booking-rules-title">訂位須知</h2>
+				<ul>
+					<li>開放預約含今日起算90天內的日期。</li>
+					<li>今日已開始的時段無法預約。</li>
+					<li>每次限訂1桌；多桌或包場請來電洽詢。</li>
+					<li>選擇日期、桌型與時段後，請完成下一步確認。</li>
+					<li>電話驗證後，可於會員中心編輯尚未開始的當前訂位。</li>
+				</ul>
+			</section>
+		</div>
+	</main>
+
+	<footer th:replace="~{front/front_layout :: footer}"></footer>
+	<button th:replace="~{front/front_layout :: backToTop}"></button>
+</body>
+</html>

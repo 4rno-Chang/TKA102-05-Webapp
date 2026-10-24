@@ -1,0 +1,413 @@
+
+/* =========================================
+   Bistroops 員工個人資料彈窗
+   沿用後台共用配色與員工管理彈窗風格
+   ========================================= */
+
+/* 隱藏彈窗與尚未使用的照片 */
+.staff-profile-overlay[hidden],
+#staffProfilePhoto[hidden] {
+    display: none !important;
+}
+
+/* 背景遮罩 */
+.staff-profile-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.55);
+}
+
+/* 彈窗本體：與新增員工彈窗相同寬度 */
+.staff-profile-dialog {
+    width: 100%;
+    max-width: 540px;
+    max-height: 90vh;
+    overflow-y: auto;
+    border-radius: 12px;
+    clip-path: inset(0 round 12px);
+
+    padding: 24px;
+    background: var(--st-card, #fffdf8);
+    border: 1px solid var(--st-border, #e8dcc9);
+    border-radius: 12px;
+    box-shadow: var(--st-shadow, 0 6px 20px rgba(90, 60, 30, 0.07));
+
+    color: var(--st-text, #3b2f2a);
+    font-family: var(--st-sans, sans-serif);
+}
+
+/* 標題與關閉按鈕 */
+.staff-profile-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.staff-profile-header h2 {
+    font-size: 22px;
+    font-weight: 700;
+    font-family: var(--st-serif, serif);
+}
+
+#staffProfileClose,
+#staffNormalPasswordClose {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 40px;
+    height: 40px;
+
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--st-red, #c4533b);
+    font-size: 28px;
+
+    transition: background-color 0.2s, transform 0.2s;
+}
+
+#staffProfileClose:hover,
+#staffNormalPasswordClose:hover {
+    background: #fbeee9;
+    transform: translateY(-2px);
+}
+
+/* 員工照片：只能查看 */
+.staff-profile-photo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+
+    margin-bottom: 22px;
+    text-align: center;
+}
+
+#staffProfilePhoto,
+#staffProfileNoPhoto {
+    width: 100px;
+    height: 100px;
+    border-radius: 10px;
+}
+
+#staffProfilePhoto {
+    object-fit: cover;
+}
+
+/* 預設員工頭像 */
+#staffProfileNoPhoto {
+    display: block;
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+
+    background: var(--st-soft, #f1e8d9);
+    border: 1px solid var(--st-border, #e8dcc9);
+    border-radius: 10px;
+}
+
+.staff-profile-photo p {
+    color: var(--st-muted, #8c7d70);
+    font-size: 12px;
+}
+
+/* 表單 */
+#staffProfileForm {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+#staffProfileForm label {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+#staffProfileForm input {
+    width: 100%;
+    min-height: 48px;
+    padding: 10px 14px;
+
+    background: var(--st-card, #fffdf8);
+    border: 1px solid var(--st-border, #e8dcc9);
+    border-radius: 8px;
+
+    color: var(--st-text, #3b2f2a);
+    font-size: 15px;
+}
+
+/* 不可修改欄位 */
+#staffProfileForm input[readonly] {
+    background: var(--st-soft, #f1e8d9);
+    color: var(--st-muted, #8c7d70);
+    cursor: default;
+}
+
+/* 可修改欄位 */
+#staffProfileForm input:not([readonly]):focus {
+    outline: 2px solid var(--st-yellow, #dba03c);
+    outline-offset: 1px;
+}
+
+/* 底部按鈕 */
+.staff-profile-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 24px;
+}
+
+.staff-profile-actions button {
+    min-height: 48px;
+    padding: 10px 18px;
+
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+
+    transition:
+        background-color 0.2s,
+        box-shadow 0.2s,
+        transform 0.2s;
+}
+
+/* 左下角：修改密碼 */
+#staffProfileChangePassword {
+    background: var(--st-card, #fffdf8);
+    border: 1px solid var(--st-red, #c4533b);
+    color: var(--st-red, #c4533b);
+}
+
+#staffProfileChangePassword:hover {
+    background: #fbeee9;
+    box-shadow: 0 5px 12px rgba(196, 83, 59, 0.15);
+    transform: translateY(-2px);
+}
+
+/* 右下角：儲存修改 */
+#staffProfileSave {
+    background: var(--st-red, #c4533b);
+    border: 1px solid var(--st-red, #c4533b);
+    color: white;
+}
+
+#staffProfileSave:hover {
+    background: var(--st-red-dark, #a8432e);
+    box-shadow: 0 5px 12px rgba(196, 83, 59, 0.25);
+    transform: translateY(-2px);
+}
+
+.staff-profile-actions button:active {
+    transform: scale(0.97);
+}
+
+/* 手機版 */
+@media (max-width: 640px) {
+    .staff-profile-overlay {
+        padding: 12px;
+    }
+
+    .staff-profile-dialog {
+        padding: 20px;
+        max-height: calc(100dvh - 24px);
+    }
+
+    .staff-profile-actions button {
+        padding: 10px 12px;
+        font-size: 14px;
+    }
+}
+
+/* 一般修改密碼：點擊背景時輕微震動 */
+@keyframes passwordShake {
+    0%, 100% {
+        transform: translateX(0);
+    }
+
+    20%, 60% {
+        transform: translateX(-7px);
+    }
+
+    40%, 80% {
+        transform: translateX(7px);
+    }
+}
+
+#staffNormalPasswordModal .password-shake {
+    animation: passwordShake 0.35s ease-in-out;
+}
+
+/* =========================================
+   一般員工修改密碼彈窗
+   ========================================= */
+
+/* 表單排列 */
+#staffNormalPasswordForm {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* 欄位標籤 */
+#staffNormalPasswordForm label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--st-text, #3b2f2a);
+}
+
+/* 密碼輸入框 */
+/* 一般修改密碼：沿用首次登入的密碼輸入框樣式 */
+#staffNormalPasswordForm input {
+    width: 100%;
+    height: 56px;
+    padding: 12px 50px 12px 14px;
+    border: 1px solid #d8d8d8;
+    border-radius: 7px;
+    background: #fff;
+    color: #302b28;
+    font-size: 16px;
+    box-sizing: border-box;
+}
+
+/* 一般修改密碼：沿用首次登入的輸入框焦點樣式 */
+#staffNormalPasswordForm input:focus {
+    outline: none;
+    border-color: #b84b35;
+    box-shadow: 0 0 0 3px rgba(184, 75, 53, 0.12);
+}
+
+/* 密碼規則與確認提示 */
+#staffNormalPasswordModal .first-password-rules p,
+#staffNormalPasswordMatch {
+    margin: 5px 0;
+    color: var(--st-muted, #8c7d70);
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+/* 錯誤訊息 */
+#staffNormalPasswordMessage {
+    min-height: 20px;
+    margin: 0;
+    color: #c0392b;
+    font-size: 14px;
+}
+
+/* 一般修改密碼：底部按鈕共用樣式 */
+#staffNormalPasswordSubmit,
+#staffNormalPasswordCancel {
+    width: 100%;
+    min-height: 48px;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.2s;
+}
+
+/* 一般修改密碼：沿用首次登入的確認按鈕樣式 */
+#staffNormalPasswordSubmit {
+    width: 100%;
+    margin-top: 15px;
+    padding: 14px;
+    border: none;
+    border-radius: 7px;
+    background: #a52b25;
+    color: white;
+    font-size: 17px;
+    cursor: pointer;
+}
+
+#staffNormalPasswordSubmit:hover {
+    background: #86221d;
+}
+
+#staffNormalPasswordSubmit:hover {
+    background: var(--st-red-dark, #a8432e);
+}
+
+/* 取消 */
+#staffNormalPasswordCancel {
+    background: var(--st-card, #fffdf8);
+    border: 1px solid var(--st-border, #e8dcc9);
+    color: var(--st-text, #3b2f2a);
+}
+
+#staffNormalPasswordCancel:hover {
+    background: var(--st-soft, #f1e8d9);
+}
+
+#staffNormalPasswordSubmit:active,
+#staffNormalPasswordCancel:active {
+    transform: scale(0.98);
+}
+
+/* 密碼輸入框與眼睛按鈕的容器 */
+#staffNormalPasswordModal .first-password-input-wrap {
+    position: relative;
+}
+
+/* 預留眼睛按鈕的空間 */
+#staffNormalPasswordForm input[type="password"] {
+    padding-right: 50px;
+}
+
+/* 眼睛按鈕固定在密碼欄位右側 */
+#staffNormalPasswordModal .staff-password-eye {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 4px;
+    border: none;
+    background: transparent;
+    color: #8c7d70;
+    cursor: pointer;
+}
+
+#staffNormalPasswordModal .staff-password-eye:hover {
+    color: #3b2f2a;
+}
+.staff-password-eye:hover {
+    color: var(--st-red, #c4533b);
+}
+
+/* 一般修改密碼：沿用首次登入的規則提示間距 */
+#staffNormalPasswordModal .first-password-rules {
+    margin-top: 10px;
+    margin-bottom: 16px;
+}
+
+/* 確認新密碼的驗證提示 */
+#staffNormalPasswordMatch {
+    margin: 8px 0 12px;
+}
+
+/* 修改密碼：底部按鈕左右並排 */
+#staffNormalPasswordModal .staff-password-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 15px;
+}
+
+/* 左右按鈕各佔一半 */
+#staffNormalPasswordModal .staff-password-actions button {
+    flex: 1;
+    width: 50%;
+    margin-top: 0;
+}
